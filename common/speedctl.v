@@ -1,3 +1,25 @@
+// Zerui An
+// FPGA for Robotics Education
+//------------------------------------------------------------------------------
+// This is a feedback control system built for controlling the motor speed.
+// inputs:
+//      clk     -- a 16MHz clock
+//      enable  -- active low reset
+//      encoder -- the encoder signal
+//      deg_s   -- desired degrees per second (suggested range: [0, 1440])
+// output:
+//      PWM     -- the pulse width modulation used to drive the motor
+// parameters:
+//      LOG_DIVIDER -- controls the how frequently the speed is changed.
+//                     The default value (3) means that the speed is adjusted
+//                     every 1/8 seconds (125ms).
+//
+//      LOG_DELTA   -- controls how much the speed is changed each time.
+//                     The default value (3) means that we increase or decrease
+//                     the PWM by 8/16000 times the difference between expected
+//                     and achieved degrees per second.
+//
+
 module speedctl (
     input clk,
     input enable,
@@ -17,7 +39,7 @@ localparam COUNT = 2'b01;
 localparam UPDATE = 2'b10;
 reg [1:0] current_state, next_state;
 
-reg enc1, enc2, enc3; // double buffering
+reg enc1, enc2, enc3; // double buffering and edge detection
 wire pulse;
 always @(posedge clk) begin
     enc1 <= encoder;
@@ -54,7 +76,7 @@ always @(*) begin
             next_state = enable ? COUNT : IDLE;
         end
 
-        COUNT: begin
+        COUNT: begin // count the number of encoder pulses
             acceleration = 0;
             counter_next = counter + {15'd0, pulse};
             timer_next = timer - 32'd1;
@@ -65,7 +87,7 @@ always @(*) begin
             end
         end
 
-        UPDATE: begin
+        UPDATE: begin // adjust speed
             acceleration = (target - counter) << LOG_DELTA;
             counter_next = 0;
             timer_next = TICKS;

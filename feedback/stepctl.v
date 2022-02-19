@@ -6,7 +6,8 @@
 //
 // inputs:
 //      clk     -- a 16MHz clock
-//      enable  -- active low reset
+//      rst     -- active high reset
+//      enable  -- start the action
 //      encoder -- the encoder signal
 //      ndegs   -- number of degrees to rotate
 // output:
@@ -17,6 +18,7 @@
 
 module stepctl (
     input clk,
+    input rst,
     input enable,
     input encoder, // encoder pulse
     input [15:0] ndegs, // desired number of ticks (degrees)
@@ -50,7 +52,7 @@ assign pulse = ~enc3 & enc2;
 speedctl motorR(clk, pwm_gen, encoder, SPEED, PWM);
 
 always @(posedge clk) begin
-    state <= next;
+    state <= rst ? IDLE : next;
     counter <= counter_next;
 end
 

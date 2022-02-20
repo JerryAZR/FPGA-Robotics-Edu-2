@@ -42,8 +42,9 @@ module fpga_top (
 	
 	reg [7:0] channel_sel;
 	wire [16:0] ttd0, ttd1, ttd2, ttd3, ttd4, ttd5, ttd6, ttd7;
+	wire [16:0] ttd_min, ttd_max;
 	reg [19:0] threshold, thresh_next;
-    wire bump, btn;
+    wire bump, btn, debounce;
     wire [19:0] reading;
 
     assign bump = bump0 & bump1 & bump2 & bump3 & bump4 & bump5;
@@ -52,6 +53,11 @@ module fpga_top (
                     >> 3;
 	
 // Module instantiations
+	debouncer db (WF_CLK, bump, debounce);
+	falling fd (WF_CLK, debounce, btn);
+	minmax8 #(17) comp (
+		ttd0, ttd1, ttd2, ttd3, ttd4, ttd5, ttd6, ttd7, ttd_min, ttd_max
+	);
 
 	IRcontrol QRTX8ch (
 		WF_CLK, channel_sel, 
@@ -60,8 +66,6 @@ module fpga_top (
 		ttd0, ttd1, ttd2, ttd3, ttd4, ttd5, ttd6, ttd7,
 		ir_evenLED, ir_oddLED
 		);
-
-    falling detector (WF_CLK, bump, btn);
 
 // State Machine
 
@@ -85,31 +89,21 @@ module fpga_top (
 				next_state = s1;
 			end
 			
-			//callibrate first color
+			//callibration
 			s1: begin
                 WF_LED = 0;
-				if (~bump0) begin
-					next_state = s2;
-                    thresh_next = reading;
+				if (btn) begin
+					next_state = s3;
+                    thresh_next = ({3'd0, ttd_min} + {3'd0, ttd_max}) >> 1;
                 end
 				else
 					next_state = s1;
 			end
-			
-			//callibrate second color
-			s2: begin
-				if (~bump1) begin
-					next_state = s3;
-                    thresh_next = (reading + threshold) >> 1;
-                end
-				else
-					next_state = s2;
-			end
-			
+
 			// now compare
 			s3: begin
 				WF_LED = reading > threshold ? 1 /* black */ : 0 /* white */;
-                next_state = ~bump2 ? s0 : s3;
+                next_state = btn ? s0 : s3;
 			end
 		endcase
 	end

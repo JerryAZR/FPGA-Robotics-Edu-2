@@ -80,13 +80,21 @@ module IRread (
 	
 	always @(*)
 	begin
+		// defaults
+		drive_sensor 	= 0;
+		timer10us_en	= 0;
+		timerttd_en 	= 0;
+		writettd		= 0;
+
+		next_state = s0;
+
 		casex(current_state)
 			//reset state
 			s0: begin
 				drive_sensor 	= 0;
 				timer10us_en	= 0;
 				timerttd_en 	= 0;
-				writettd	= 0;
+				writettd		= 0;
 				
 				next_state = s1;
 			end
@@ -96,7 +104,7 @@ module IRread (
 				drive_sensor 	= 1;
 				timer10us_en	= 1;
 				timerttd_en 	= 0;
-				writettd	= 0;
+				writettd		= 0;
 				
 				if (timer10us == 8'd160)
 					next_state = s2;
@@ -109,7 +117,7 @@ module IRread (
 				drive_sensor 	= 0;
 				timer10us_en	= 0;
 				timerttd_en 	= 1;
-				writettd	= 0;
+				writettd		= 0;
 				
 				if (sensor == 0)
 					next_state = s3;
@@ -123,7 +131,7 @@ module IRread (
 				drive_sensor 	= 0;
 				timer10us_en	= 0;
 				timerttd_en 	= 1;
-				writettd	= 1;
+				writettd		= 1;
 				
 				next_state = s1;
 			end

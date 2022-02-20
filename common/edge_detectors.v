@@ -37,7 +37,7 @@ module debouncer (
     output reg stable
 );
 
-    parameter delay = 16'd160;
+    parameter delay = 16'd16;
 
     reg [15:0] counter;
 

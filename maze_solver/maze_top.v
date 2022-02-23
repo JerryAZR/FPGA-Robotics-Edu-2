@@ -1,6 +1,10 @@
 // Zerui An
 // FPGA for Robotics Education
 //------------------------------------------------------------------------------
+// This module implements a maze solver controller.
+// The controller implements the "right-hand algorithm" (turning right whenever
+// possible).
+
 module fpga_top (
 	input wire WF_CLK, WF_BUTTON,
 	input bump0, bump1, bump2, bump3, bump4, bump5,
@@ -14,7 +18,7 @@ module fpga_top (
     output reg WF_LED
 	);
 	
-// Parameters
+// States
 	localparam INIT	    = 4'd0;
     localparam WAIT     = 4'd1;
 	localparam SEARCH	= 4'd2;
@@ -51,24 +55,26 @@ module fpga_top (
     assign ir_color[6] = ttd6 > threshold;
     assign ir_color[7] = ttd7 > threshold;
 
-    assign on_track_raw = ir_color[3] | ir_color[4];
-    assign right = ir_color[3:0] == 4'b1111;
-    assign left = ir_color[7:4] == 4'b1111;
-    assign lost_raw = ir_color == 8'h00;
+    assign on_track_raw = ir_color[3] | ir_color[4]; // if the car is on track
+    assign right = ir_color[3:0] == 4'b1111; // if right turn is possible
+    assign left = ir_color[7:4] == 4'b1111; // if left turn is possible
+    assign lost_raw = ir_color == 8'h00; // if non of the 8 sensors see the line
     assign pos_ok_raw = (ir_color[3] | ir_color[4]) &
                     (ir_color[7:5] == {ir_color[0], ir_color[1], ir_color[2]});
+                    // if need (not) to adjust direction 
     assign left_sum = {2'd0, ir_color[7]} + {2'd0, ir_color[6]}
                     + {2'd0, ir_color[5]} + {2'd0, ir_color[4]};
+                    // number of left ir sensors seeing a black line
     assign right_sum = {2'd0, ir_color[0]} + {2'd0, ir_color[1]}
                      + {2'd0, ir_color[2]} + {2'd0, ir_color[3]};
+                     // number of right ir sensors seeing a black line
 
     reg driver_sel; // 0: default driver; 1: stepctl driver
     wire driverL0_en, driverR0_en;
-    wire driverL0_pwm, driverR0_pwm;
     wire driverL1_en, driverR1_en;
-    wire driverL1_pwm, driverR1_pwm;
-    reg speedctl_en, stepctl_en;
-    wire step_done;
+    reg speedctl_en; // enable direct speed control
+    reg stepctl_en; // use the stepctl module
+    wire step_done; // "done" signal of the stepctl module
     reg [15:0] degreeL, degreeR;
     reg [15:0] speedL, speedR, speedL_reg, speedR_reg;
     reg motorL_dir_reg, motorR_dir_reg;
@@ -83,6 +89,7 @@ module fpga_top (
 
     // Module instantiations
     // 100 ms debouncer
+    // Prevent "bad readings" (if any) from messing up the control
     debouncer #(32'd1600000) db1 (WF_CLK, on_track_raw, on_track);
     debouncer #(32'd1600000) db2 (WF_CLK, lost_raw, lost);
     debouncer #(32'd1600000) db3 (WF_CLK, pos_ok_raw, pos_ok);
@@ -169,6 +176,7 @@ module fpga_top (
 
 			// move forward until the sensor sees the black line
 			SEARCH: begin
+                // using direct control
 				driver_sel = 0;
                 speedctl_en = 1;
                 motorL_dir = 0;
@@ -176,7 +184,7 @@ module fpga_top (
                 speedL = 16'd360;
                 speedR = 16'd360;
 
-                if (on_track) begin
+                if (on_track) begin // start line following
                     next_state = LINE_FOLLOW_1;
                 end
                 else next_state = SEARCH;
@@ -187,8 +195,8 @@ module fpga_top (
                 speedctl_en = 1;
                 motorL_dir = 0;
                 motorR_dir = 0;
-                speedL = 16'd180;
-                speedR = 16'd180;
+                speedL = 16'd360;
+                speedR = 16'd360;
 
                 if (right) begin // Cam make a right turn
                     next_state = TURN_RIGHT;
@@ -209,15 +217,15 @@ module fpga_top (
                 speedL = 16'd180;
                 speedR = 16'd180;
 
-                if (left_sum > right_sum) begin
+                if (left_sum > right_sum) begin // left turn needed
                     motorL_dir = 1;
                     motorR_dir = 0;
-                end else begin
+                end else begin // right turn needed
                     motorL_dir = 0;
                     motorR_dir = 1;
                 end
 
-                if (left_sum == right_sum) begin
+                if (left_sum == right_sum) begin // line is at the center 
                     next_state = LINE_FOLLOW_1;
                 end else begin
                     next_state = LINE_FOLLOW_2;
@@ -226,6 +234,7 @@ module fpga_top (
 
             TURN_RIGHT: begin
                 driver_sel = 1;
+                // set direction and speed before entering STEP_CTL state.
                 motorL_dir = 0;
                 motorR_dir = 1;
                 speedL = 16'd360;
@@ -234,6 +243,8 @@ module fpga_top (
                 stepctl_en = 1;
                 degreeL = 16'd240;
                 degreeR = 16'd120;
+                // Accomplished by making the left wheel rotate 360 degrees
+                // more than the right wheel.
 
                 next_state = STEP_CTL;
                 next_return_state = LINE_FOLLOW_1;
@@ -256,6 +267,8 @@ module fpga_top (
 
             TURN_AROUND_2:  begin
                 driver_sel = 0;
+                // move backward until the line is not under the sensor array
+                // This is to ensure that we do not miss any right turns
                 speedctl_en = 1;
                 motorL_dir = 1;
                 motorR_dir = 1;

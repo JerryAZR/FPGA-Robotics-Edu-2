@@ -21,12 +21,11 @@ module fpga_top (
     localparam LINE_FOLLOW_1    = 4'd3;
     localparam LINE_FOLLOW_2    = 4'd4;
     localparam LINE_FOLLOW_3    = 4'd5;
-	localparam TURN_RIGHT_1	    = 4'd6;
-	localparam TURN_RIGHT_2	    = 4'd7;
-	localparam TURN_RIGHT_3	    = 4'd8;
+	localparam TURN_RIGHT	    = 4'd6;
+    localparam STEP_CTL         = 4'd15;
 	
 // Register and Wire declaration
-	reg[3:0] next_state, current_state;
+	reg[3:0] next_state, current_state, return_state, next_return_state;
 	
 	reg [7:0] channel_sel;
 	wire [16:0] ttd0, ttd1, ttd2, ttd3, ttd4, ttd5, ttd6, ttd7; // int values
@@ -112,6 +111,7 @@ module fpga_top (
 
 	always @(posedge WF_CLK) begin
 		current_state <= next_state;
+        return_state <= next_return_state;
         threshold <= thresh_next;
         speedL_reg <= speedL;
         speedR_reg <= speedR;
@@ -125,6 +125,7 @@ module fpga_top (
         channel_sel	= 8'hFF;
         thresh_next = threshold;
         next_state = INIT;
+        next_return_state = return_state;
         WF_LED = lost;
         driver_sel = 0;
         speedctl_en = 0;
@@ -188,7 +189,7 @@ module fpga_top (
                 speedR = 16'd180;
 
                 if (right) begin // Cam make a right turn
-                    next_state = TURN_RIGHT_1;
+                    next_state = TURN_RIGHT;
                 end else if (left) begin // ignore left turn
                     next_state = LINE_FOLLOW_1;
                 end else if (pos_ok) begin
@@ -221,7 +222,7 @@ module fpga_top (
                 end
             end
 
-            TURN_RIGHT_1: begin
+            TURN_RIGHT: begin
                 driver_sel = 1;
                 motorL_dir = 0;
                 motorR_dir = 1;
@@ -232,18 +233,15 @@ module fpga_top (
                 degreeL = 16'd240;
                 degreeR = 16'd120;
 
-                next_state = TURN_RIGHT_2;
+                next_state = STEP_CTL;
+                next_return_state = LINE_FOLLOW_1;
             end
 
-            TURN_RIGHT_2: begin
+            STEP_CTL: begin
                 driver_sel = 1;
-                motorL_dir = 0;
-                motorR_dir = 1;
-                speedL = 16'd360;
-                speedR = 16'd180;
+                // use saved motor direction and speed
 
-                if (step_done) next_state = LINE_FOLLOW_1;
-                else next_state = TURN_RIGHT_2;
+                next_state = step_done ? return_state : STEP_CTL;
             end
 
 		endcase

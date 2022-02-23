@@ -22,6 +22,8 @@ module fpga_top (
     localparam LINE_FOLLOW_2    = 4'd4;
     localparam LINE_FOLLOW_3    = 4'd5;
 	localparam TURN_RIGHT	    = 4'd6;
+    localparam TURN_AROUND_1    = 4'd7;
+    localparam TURN_AROUND_2    = 4'd8;
     localparam STEP_CTL         = 4'd15;
 	
 // Register and Wire declaration
@@ -197,7 +199,7 @@ module fpga_top (
                 end else if (~lost) begin // Adjust the direction
                     next_state = LINE_FOLLOW_2;
                 end else begin // lost, turn around
-                    next_state = WAIT;
+                    next_state = TURN_AROUND_1;
                 end
             end
 
@@ -235,6 +237,32 @@ module fpga_top (
 
                 next_state = STEP_CTL;
                 next_return_state = LINE_FOLLOW_1;
+            end
+
+            TURN_AROUND_1: begin
+                driver_sel = 1;
+                motorL_dir = 0;
+                motorR_dir = 1;
+                speedL = 16'd180;
+                speedR = 16'd180;
+
+                stepctl_en = 1;
+                degreeL = 16'd360;
+                degreeR = 16'd360;
+
+                next_state = STEP_CTL;
+                next_return_state = TURN_AROUND_2;
+            end
+
+            TURN_AROUND_2:  begin
+                driver_sel = 0;
+                speedctl_en = 1;
+                motorL_dir = 1;
+                motorR_dir = 1;
+                speedL = 16'd180;
+                speedR = 16'd180;
+
+                next_state = lost ? SEARCH : TURN_AROUND_2;
             end
 
             STEP_CTL: begin

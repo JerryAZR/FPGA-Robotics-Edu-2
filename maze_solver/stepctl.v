@@ -60,7 +60,7 @@ always @(*) begin
         IDLE: begin
             next = enable ? COUNTDOWN : IDLE;
 
-            counter_next = enable ? ndegs : 16'd0;
+            counter_next = enable ? ndegs : 16'd0; // Take a snapshot
             motor_en = 0;
         end
 

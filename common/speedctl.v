@@ -60,7 +60,7 @@ pwm pwm_generator(clk, enable, speed, PWM);
 
 always @(posedge clk) begin
     current_state <= next_state;
-    speed <= enable ? speed + acceleration : 0;
+    speed <= enable ? speed + acceleration : 16'd0;
     timer <= timer_next;
     counter <= counter_next;
 end

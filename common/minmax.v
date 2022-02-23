@@ -1,8 +1,11 @@
 module minmax4 (
-    input [BIT_WIDTH-1:0] data0, data1, data2, data3,
-    output wire [BIT_WIDTH-1:0] min, max
+    data0, data1, data2, data3,
+    min, max
 );
     parameter BIT_WIDTH = 16;
+
+    input [BIT_WIDTH-1:0] data0, data1, data2, data3;
+    output wire [BIT_WIDTH-1:0] min, max;
 
     wire [BIT_WIDTH-1:0] min01, min23, max01, max23;
     
@@ -17,11 +20,15 @@ module minmax4 (
 endmodule
 
 module minmax8 (
-    input [BIT_WIDTH-1:0] data0, data1, data2, data3,
-    input [BIT_WIDTH-1:0] data4, data5, data6, data7,
-    output wire [BIT_WIDTH-1:0] min, max
+    data0, data1, data2, data3,
+    data4, data5, data6, data7,
+    min, max
 );
     parameter BIT_WIDTH = 16;
+
+    input [BIT_WIDTH-1:0] data0, data1, data2, data3;
+    input [BIT_WIDTH-1:0] data4, data5, data6, data7;
+    output wire [BIT_WIDTH-1:0] min, max;
 
     wire [BIT_WIDTH-1:0] min0, min1, max0, max1;
 

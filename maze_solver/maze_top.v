@@ -15,24 +15,28 @@ module fpga_top (
 	);
 	
 // Parameters
-	localparam INIT	    = 3'b000;
-    localparam WAIT     = 3'b001;
-	localparam SEARCH	= 3'b010;
-	localparam TURN_RIGHT_1	= 3'b011;
-	localparam TURN_RIGHT_2	= 3'b100;
-	localparam TURN_RIGHT_3	= 3'b101;
+	localparam INIT	    = 4'd0;
+    localparam WAIT     = 4'd1;
+	localparam SEARCH	= 4'd2;
+    localparam LINE_FOLLOW_1    = 4'd3;
+    localparam LINE_FOLLOW_2    = 4'd4;
+    localparam LINE_FOLLOW_3    = 4'd5;
+	localparam TURN_RIGHT_1	    = 4'd6;
+	localparam TURN_RIGHT_2	    = 4'd7;
+	localparam TURN_RIGHT_3	    = 4'd8;
 	
 // Register and Wire declaration
-	reg[2:0] next_state, current_state;
+	reg[3:0] next_state, current_state;
 	
 	reg [7:0] channel_sel;
 	wire [16:0] ttd0, ttd1, ttd2, ttd3, ttd4, ttd5, ttd6, ttd7; // int values
     wire [7:0] ir_color; // 1: black; 0: white
 	wire [16:0] ttd_min, ttd_max; // min & max of ttd. Used for calibration
 	reg [19:0] threshold, thresh_next; // Saved during calibration (INIT)
-    wire bump, btn, debounce; // consolidated bump switch signals
+    wire bump; // consolidated bump switch signal
 
-    wire right, on_track; // signals for special ir patterns
+    wire right, left, on_track, lost; // signals for special ir patterns
+    wire on_track_raw, lost_raw;
     wire [2:0] left_sum, right_sum;
 
     assign bump = bump0 & bump1 & bump2 & bump3 & bump4 & bump5;
@@ -46,12 +50,14 @@ module fpga_top (
     assign ir_color[6] = ttd6 > threshold;
     assign ir_color[7] = ttd7 > threshold;
 
-    assign on_track = ir_color[3] & ir_color[4];
-    assign right = ir_color[4:0] == 5'b11111;
+    assign on_track_raw = ir_color[3] & ir_color[4];
+    assign right = ir_color[3:0] == 4'b1111;
+    assign left = ir_color[7:4] == 4'b1111;
+    assign lost_raw = ir_color == 8'h00;
     assign left_sum = {2'd0, ir_color[4]} + {2'd0, ir_color[5]}
                     + {2'd0, ir_color[6]} + {2'd0, ir_color[7]};
     assign right_sum = {2'd0, ir_color[0]} + {2'd0, ir_color[1]}
-                    + {2'd0, ir_color[2]} + {2'd0, ir_color[3]};
+                     + {2'd0, ir_color[2]} + {2'd0, ir_color[3]};
 
     reg driver_sel; // 0: default driver; 1: stepctl driver
     wire driverL0_en, driverR0_en;
@@ -71,9 +77,11 @@ module fpga_top (
 
     assign step_done = ~(driverL1_en | driverR1_en);
 
-// Module instantiations
-	debouncer db (WF_CLK, bump, debounce);
-	falling fd (WF_CLK, debounce, btn);
+    // Module instantiations
+    // 100 ms debouncer
+    debouncer #(32'd1600000) db1 (WF_CLK, on_track_raw, on_track);
+    debouncer #(32'd1600000) db2 (WF_CLK, lost_raw, lost);
+
 	minmax8 #(17) comp (
 		ttd0, ttd1, ttd2, ttd3, ttd4, ttd5, ttd6, ttd7, ttd_min, ttd_max
 	);
@@ -109,7 +117,7 @@ module fpga_top (
         channel_sel	= 8'hFF;
         thresh_next = threshold;
         next_state = INIT;
-        WF_LED = 1;
+        WF_LED = lost;
         driver_sel = 0;
         speedctl_en = 0;
         stepctl_en = 0;
@@ -125,10 +133,13 @@ module fpga_top (
                 WF_LED = 0;
 				if (~bump) begin
 					next_state = WAIT;
-                    thresh_next = ({3'd0, ttd_min} + {3'd0, ttd_max}) >> 1;
+                    // Use biased average as threshold
+                    thresh_next = ({3'd0, ttd_min} + {3'd0, ttd_min}
+                                + {3'd0, ttd_min} + {3'd0, ttd_max}) >> 2;
                 end
-				else
+				else begin
 					next_state = INIT;
+                end
 			end
 
             // WAIT for button press
@@ -143,13 +154,49 @@ module fpga_top (
                 speedL = 16'd360;
                 speedR = 16'd360;
 
-                if (~bump) next_state = WAIT;
-                else if (on_track) begin
-                    next_state = TURN_RIGHT_1;
-                    
+                if (on_track) begin
+                    next_state = LINE_FOLLOW_1;
                 end
                 else next_state = SEARCH;
 			end
+
+            LINE_FOLLOW_1: begin
+                driver_sel = 0;
+                speedctl_en = 1;
+                speedL = 16'd180;
+                speedR = 16'd180;
+
+                if (right) begin // Cam make a right turn
+                    next_state = TURN_RIGHT_1;
+                end else if (on_track) begin // ignore left turn
+                    next_state = LINE_FOLLOW_1;
+                end else if (~lost) begin // Adjust the direction
+                    next_state = LINE_FOLLOW_2;
+                end else begin // lost, turn around
+                    next_state = WAIT;
+                end
+            end
+
+            LINE_FOLLOW_2: begin
+                driver_sel = 0;
+                speedctl_en = 1;
+                speedL = 16'd180;
+                speedR = 16'd180;
+
+                if (left_sum > right_sum) begin
+                    motorL_dir = 1;
+                    motorR_dir = 0;
+                end else begin
+                    motorL_dir = 0;
+                    motorR_dir = 1;
+                end
+
+                if (left_sum == right_sum) begin
+                    next_state = LINE_FOLLOW_1;
+                end else begin
+                    next_state = LINE_FOLLOW_2;
+                end
+            end
 
             TURN_RIGHT_1: begin
                 driver_sel = 1;
@@ -170,12 +217,14 @@ module fpga_top (
                 speedL = 16'd360;
                 speedR = 16'd180;
 
-                if (~bump) next_state = WAIT;
-                else if (step_done) next_state = WAIT;
+                if (step_done) next_state = LINE_FOLLOW_1;
                 else next_state = TURN_RIGHT_2;
             end
 
 		endcase
+
+        // Highest priority
+        if (~bump) next_state = WAIT;
 	end
 	
 endmodule

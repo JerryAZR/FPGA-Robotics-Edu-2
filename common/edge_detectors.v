@@ -37,12 +37,12 @@ module debouncer (
     output reg stable
 );
 
-    parameter delay = 16'd16;
+    parameter delay = 32'd16;
 
-    reg [15:0] counter;
+    reg [31:0] counter;
 
     always @(posedge clk) begin
-        counter <= (signal == stable) ? 16'd0 : (counter + 16'd1);
+        counter <= (signal == stable) ? 32'd0 : (counter + 32'd1);
         stable <= (counter >= delay) ? signal : stable;
     end
 

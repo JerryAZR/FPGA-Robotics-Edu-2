@@ -62,12 +62,12 @@ module IRread (
 // Register and Wire declaration
 	reg[2:0] current_state, next_state;
 	reg timer10us_en, timerttd_en, drive_sensor, writettd;
-	wire[7:0] timer10us;
-	wire[16:0] timerttd;
+	wire[31:0] timer10us;
+	wire[31:0] timerttd;
 
 // Module Instantiations
-	timer ten_us_buffer 	(clk, timer10us_en, 1'bZ, timer10us);
-	timer decay_timer	(clk, timerttd_en, 1'bZ, timerttd);
+	timer ten_us_buffer 	(clk, timer10us_en, 1'b0, timer10us);
+	timer decay_timer	(clk, timerttd_en, 1'b0, timerttd);
 
 // State Machine
 	always @(posedge clk)
@@ -106,7 +106,7 @@ module IRread (
 				timerttd_en 	= 0;
 				writettd		= 0;
 				
-				if (timer10us == 8'd160)
+				if (timer10us == 32'd160)
 					next_state = s2;
 				else
 					next_state = s1;
@@ -142,16 +142,16 @@ module IRread (
 	
 	assign sensor = drive_sensor ? 1'b1 : 1'bZ;
 	
-	always @(*)
+	always @(posedge clk)
 	begin
 		if (!enable)
 		begin
-			ttd = 0;
+			ttd <= 0;
 		end
 		else if (writettd)
-			ttd = timerttd;
+			ttd <= timerttd[15:0];
 		else
-			ttd = ttd;
+			ttd <= ttd;
 	end
 	
 endmodule
@@ -163,7 +163,7 @@ endmodule
 // that means that the counter increments every 62.5ns
 module timer (
 	input clk, enable, stop,
-	output reg[23:0] counter
+	output reg[31:0] counter
 	);
 	
 	always @(posedge clk)

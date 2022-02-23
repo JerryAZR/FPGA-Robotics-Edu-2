@@ -35,8 +35,8 @@ module fpga_top (
 	reg [19:0] threshold, thresh_next; // Saved during calibration (INIT)
     wire bump; // consolidated bump switch signal
 
-    wire right, left, on_track, lost; // signals for special ir patterns
-    wire on_track_raw, lost_raw;
+    wire right, left, on_track, lost, pos_ok; // signals for special ir patterns
+    wire on_track_raw, lost_raw, pos_ok_raw;
     wire [2:0] left_sum, right_sum;
 
     assign bump = bump0 & bump1 & bump2 & bump3 & bump4 & bump5;
@@ -50,12 +50,14 @@ module fpga_top (
     assign ir_color[6] = ttd6 > threshold;
     assign ir_color[7] = ttd7 > threshold;
 
-    assign on_track_raw = ir_color[3] & ir_color[4];
+    assign on_track_raw = ir_color[3] | ir_color[4];
     assign right = ir_color[3:0] == 4'b1111;
     assign left = ir_color[7:4] == 4'b1111;
     assign lost_raw = ir_color == 8'h00;
-    assign left_sum = {2'd0, ir_color[4]} + {2'd0, ir_color[5]}
-                    + {2'd0, ir_color[6]} + {2'd0, ir_color[7]};
+    assign pos_ok_raw = (ir_color[3] | ir_color[4]) &
+                    (ir_color[7:5] == {ir_color[0], ir_color[1], ir_color[2]});
+    assign left_sum = {2'd0, ir_color[7]} + {2'd0, ir_color[6]}
+                    + {2'd0, ir_color[5]} + {2'd0, ir_color[4]};
     assign right_sum = {2'd0, ir_color[0]} + {2'd0, ir_color[1]}
                      + {2'd0, ir_color[2]} + {2'd0, ir_color[3]};
 
@@ -67,7 +69,8 @@ module fpga_top (
     reg speedctl_en, stepctl_en;
     wire step_done;
     reg [15:0] degreeL, degreeR;
-    reg [15:0] speedL, speedR;
+    reg [15:0] speedL, speedR, speedL_reg, speedR_reg;
+    reg motorL_dir_reg, motorR_dir_reg;
 
 	assign motorL_en = driver_sel ? driverL1_en : driverL0_en;
 	assign motorR_en = driver_sel ? driverR1_en : driverR0_en;
@@ -81,6 +84,7 @@ module fpga_top (
     // 100 ms debouncer
     debouncer #(32'd1600000) db1 (WF_CLK, on_track_raw, on_track);
     debouncer #(32'd1600000) db2 (WF_CLK, lost_raw, lost);
+    debouncer #(32'd1600000) db3 (WF_CLK, pos_ok_raw, pos_ok);
 
 	minmax8 #(17) comp (
 		ttd0, ttd1, ttd2, ttd3, ttd4, ttd5, ttd6, ttd7, ttd_min, ttd_max
@@ -109,6 +113,10 @@ module fpga_top (
 	always @(posedge WF_CLK) begin
 		current_state <= next_state;
         threshold <= thresh_next;
+        speedL_reg <= speedL;
+        speedR_reg <= speedR;
+        motorL_dir_reg <= motorL_dir;
+        motorR_dir_reg <= motorR_dir;
     end
 
 		
@@ -121,16 +129,21 @@ module fpga_top (
         driver_sel = 0;
         speedctl_en = 0;
         stepctl_en = 0;
-        motorL_dir = 0;
-        motorR_dir = 0;
         degreeL = 0;
         degreeR = 0;
-        speedL = 0;
-        speedR = 0;
+
+        motorL_dir = motorL_dir_reg;
+        motorR_dir = motorR_dir_reg;
+        speedL = speedL_reg;
+        speedR = speedR_reg;
 		casex(current_state)
 			//callibration
 			INIT: begin
                 WF_LED = 0;
+                motorL_dir = 0;
+                motorR_dir = 0;
+                speedL = 0;
+                speedR = 0;
 				if (~bump) begin
 					next_state = WAIT;
                     // Use biased average as threshold
@@ -144,6 +157,10 @@ module fpga_top (
 
             // WAIT for button press
             WAIT: begin
+                motorL_dir = 0;
+                motorR_dir = 0;
+                speedL = 0;
+                speedR = 0;
                 next_state = WF_BUTTON ? WAIT : SEARCH;
             end
 
@@ -151,6 +168,8 @@ module fpga_top (
 			SEARCH: begin
 				driver_sel = 0;
                 speedctl_en = 1;
+                motorL_dir = 0;
+                motorR_dir = 0;
                 speedL = 16'd360;
                 speedR = 16'd360;
 
@@ -163,12 +182,16 @@ module fpga_top (
             LINE_FOLLOW_1: begin
                 driver_sel = 0;
                 speedctl_en = 1;
+                motorL_dir = 0;
+                motorR_dir = 0;
                 speedL = 16'd180;
                 speedR = 16'd180;
 
                 if (right) begin // Cam make a right turn
                     next_state = TURN_RIGHT_1;
-                end else if (on_track) begin // ignore left turn
+                end else if (left) begin // ignore left turn
+                    next_state = LINE_FOLLOW_1;
+                end else if (pos_ok) begin
                     next_state = LINE_FOLLOW_1;
                 end else if (~lost) begin // Adjust the direction
                     next_state = LINE_FOLLOW_2;
@@ -202,6 +225,8 @@ module fpga_top (
                 driver_sel = 1;
                 motorL_dir = 0;
                 motorR_dir = 1;
+                speedL = 16'd360;
+                speedR = 16'd180;
 
                 stepctl_en = 1;
                 degreeL = 16'd240;

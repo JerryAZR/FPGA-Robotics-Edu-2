@@ -19,15 +19,16 @@ module fpga_top (
 	);
 	
 // States
-	localparam INIT	    = 4'd0;
-    localparam WAIT     = 4'd1;
-	localparam SEARCH	= 4'd2;
+	localparam INIT	            = 4'd0;
+    localparam WAIT             = 4'd1;
+	localparam SEARCH	        = 4'd2;
     localparam LINE_FOLLOW_1    = 4'd3;
     localparam LINE_FOLLOW_2    = 4'd4;
     localparam LINE_FOLLOW_3    = 4'd5;
 	localparam TURN_RIGHT	    = 4'd6;
     localparam TURN_AROUND_1    = 4'd7;
     localparam TURN_AROUND_2    = 4'd8;
+    localparam END              = 4'd9;
     localparam STEP_CTL         = 4'd15;
 	
 // Register and Wire declaration
@@ -40,8 +41,8 @@ module fpga_top (
 	reg [19:0] threshold, thresh_next; // Saved during calibration (INIT)
     wire bump; // consolidated bump switch signal
 
-    wire right, left, on_track, lost, pos_ok; // signals for special ir patterns
-    wire on_track_raw, lost_raw, pos_ok_raw;
+    wire right, left, on_track, lost, pos_ok, goal; // signals for special ir patterns
+    wire on_track_raw, lost_raw, pos_ok_raw, goal_raw;
     wire [2:0] left_sum, right_sum;
 
     assign bump = bump0 & bump1 & bump2 & bump3 & bump4 & bump5;
@@ -62,6 +63,7 @@ module fpga_top (
     assign pos_ok_raw = (ir_color[3] | ir_color[4]) &
                     (ir_color[7:5] == {ir_color[0], ir_color[1], ir_color[2]});
                     // if need (not) to adjust direction 
+    assign goal_raw = ir_color[0] & ir_color[7] & (~&ir_color);
     assign left_sum = {2'd0, ir_color[7]} + {2'd0, ir_color[6]}
                     + {2'd0, ir_color[5]} + {2'd0, ir_color[4]};
                     // number of left ir sensors seeing a black line
@@ -87,12 +89,15 @@ module fpga_top (
 
     assign step_done = ~(driverL1_en | driverR1_en);
 
+    reg [31:0] blink_cnt;
+
     // Module instantiations
     // 100 ms debouncer
     // Prevent "bad readings" (if any) from messing up the control
     debouncer #(32'd1600000) db1 (WF_CLK, on_track_raw, on_track);
     debouncer #(32'd1600000) db2 (WF_CLK, lost_raw, lost);
     debouncer #(32'd1600000) db3 (WF_CLK, pos_ok_raw, pos_ok);
+    debouncer #(32'd160000)  db4 (WF_CLK, goal_raw, goal);
 
 	minmax8 #(17) comp (
 		ttd0, ttd1, ttd2, ttd3, ttd4, ttd5, ttd6, ttd7, ttd_min, ttd_max
@@ -126,6 +131,8 @@ module fpga_top (
         speedR_reg <= speedR;
         motorL_dir_reg <= motorL_dir;
         motorR_dir_reg <= motorR_dir;
+
+        blink_cnt <= blink_cnt + 1;
     end
 
 		
@@ -135,7 +142,7 @@ module fpga_top (
         thresh_next = threshold;
         next_state = INIT;
         next_return_state = return_state;
-        WF_LED = lost;
+        WF_LED = 1;
         driver_sel = 0;
         speedctl_en = 0;
         stepctl_en = 0;
@@ -198,7 +205,9 @@ module fpga_top (
                 speedL = 16'd360;
                 speedR = 16'd360;
 
-                if (right) begin // Cam make a right turn
+                if (goal) begin
+                    next_state = END;
+                end else if (right) begin // Cam make a right turn
                     next_state = TURN_RIGHT;
                 end else if (left) begin // ignore left turn
                     next_state = LINE_FOLLOW_1;
@@ -283,6 +292,17 @@ module fpga_top (
                 // use saved motor direction and speed
 
                 next_state = step_done ? return_state : STEP_CTL;
+            end
+
+            END: begin
+                motorL_dir = 0;
+                motorR_dir = 0;
+                speedL = 0;
+                speedR = 0;
+                // blink LED
+                WF_LED = blink_cnt[23];
+
+                next_state = END; // Use the red reset button on FPGA to restart
             end
 
 		endcase

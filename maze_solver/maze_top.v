@@ -94,9 +94,9 @@ module fpga_top (
     // Module instantiations
     // 100 ms debouncer
     // Prevent "bad readings" (if any) from messing up the control
-    debouncer #(32'd1600000) db1 (WF_CLK, on_track_raw, on_track);
-    debouncer #(32'd1600000) db2 (WF_CLK, lost_raw, lost);
-    debouncer #(32'd1600000) db3 (WF_CLK, pos_ok_raw, pos_ok);
+    debouncer #(32'd160000) db1 (WF_CLK, on_track_raw, on_track);
+    debouncer #(32'd160000) db2 (WF_CLK, lost_raw, lost);
+    debouncer #(32'd160000) db3 (WF_CLK, pos_ok_raw, pos_ok);
     debouncer #(32'd160000)  db4 (WF_CLK, goal_raw, goal);
 
 	minmax8 #(17) comp (
@@ -114,10 +114,10 @@ module fpga_top (
     speedctl speedctlL(WF_CLK, motorL_en, motorL_encdr, speedL, motorL_pwm);
     speedctl speedctlR(WF_CLK, motorR_en, motorR_encdr, speedR, motorR_pwm);
 
-    stepctl #(.SPEED(16'd360)) stepL(
+    stepctl stepL(
         WF_CLK, ~bump, stepctl_en, motorL_encdr, degreeL, driverL1_en
     );
-    stepctl #(.SPEED(16'd360)) stepR(
+    stepctl stepR(
         WF_CLK, ~bump, stepctl_en, motorR_encdr, degreeR, driverR1_en
     );
 
@@ -188,8 +188,8 @@ module fpga_top (
                 speedctl_en = 1;
                 motorL_dir = 0;
                 motorR_dir = 0;
-                speedL = 16'd360;
-                speedR = 16'd360;
+                speedL = 16'd180;
+                speedR = 16'd180;
 
                 if (on_track) begin // start line following
                     next_state = LINE_FOLLOW_1;
@@ -202,8 +202,8 @@ module fpga_top (
                 speedctl_en = 1;
                 motorL_dir = 0;
                 motorR_dir = 0;
-                speedL = 16'd360;
-                speedR = 16'd360;
+                speedL = 16'd180;
+                speedR = 16'd180;
 
                 if (goal) begin
                     next_state = END;

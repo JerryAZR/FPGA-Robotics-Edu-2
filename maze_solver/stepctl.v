@@ -11,8 +11,6 @@
 //      ndegs   -- number of degrees to rotate
 // output:
 //      motor_en     -- if motor should be enabled
-// parameters:
-//      SPEED   -- degrees per second 
 //
 
 module stepctl (
@@ -23,9 +21,6 @@ module stepctl (
     input [15:0] ndegs, // desired number of ticks (degrees)
     output reg motor_en
 );
-
-// default speed
-parameter SPEED = 16'd720;
 
 // states
 localparam IDLE = 4'd0;

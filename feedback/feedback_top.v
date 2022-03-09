@@ -1,23 +1,23 @@
 `include "pinmap.v"
 
 module fpga_top (
-	input wire WF_CLK, WF_BUTTON,
-	input wire motorL_encdr, motorR_encdr,
-	input wire bump0, bump1, bump2, bump3, bump4, bump5,
-	output wire motorL_pwm, motorR_pwm,
-	output wire motorL_en, motorL_dir, motorR_en, motorR_dir,
+    input wire WF_CLK, WF_BUTTON,
+    input wire motorL_encdr, motorR_encdr,
+    input wire bump0, bump1, bump2, bump3, bump4, bump5,
+    output wire motorL_pwm, motorR_pwm,
+    output wire motorL_en, motorL_dir, motorR_en, motorR_dir,
     output wire WF_LED
-	);
+    );
 
 wire enable;
 wire l_stop, r_stop;
 
 // 50 rotations, 3 rotations per second
 stepctl #(.SPEED(16'd1080)) motorR(
-	WF_CLK, r_stop, enable, motorR_encdr, 16'd18000, motorR_pwm, motorR_en
+    WF_CLK, r_stop, enable, motorR_encdr, 16'd18000, motorR_pwm, motorR_en
 );
 stepctl #(.SPEED(16'd1080)) motorL(
-	WF_CLK, l_stop, enable, motorL_encdr, 16'd18000, motorL_pwm, motorL_en
+    WF_CLK, l_stop, enable, motorL_encdr, 16'd18000, motorL_pwm, motorL_en
 );
 
 // button edge detector

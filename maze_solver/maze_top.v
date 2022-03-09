@@ -6,39 +6,39 @@
 // possible).
 
 module fpga_top (
-	input wire WF_CLK, WF_BUTTON,
-	input bump0, bump1, bump2, bump3, bump4, bump5,
-	input wire motorL_encdr, motorR_encdr,
-	inout wire ir_snsrch0, ir_snsrch1, ir_snsrch2, ir_snsrch3,
-			ir_snsrch4, ir_snsrch5, ir_snsrch6, ir_snsrch7,	
-	output wire ir_evenLED, ir_oddLED,
-	output wire motorL_pwm, motorR_pwm,
-	output wire motorL_en, motorR_en,
+    input wire WF_CLK, WF_BUTTON,
+    input bump0, bump1, bump2, bump3, bump4, bump5,
+    input wire motorL_encdr, motorR_encdr,
+    inout wire ir_snsrch0, ir_snsrch1, ir_snsrch2, ir_snsrch3,
+            ir_snsrch4, ir_snsrch5, ir_snsrch6, ir_snsrch7,	
+    output wire ir_evenLED, ir_oddLED,
+    output wire motorL_pwm, motorR_pwm,
+    output wire motorL_en, motorR_en,
     output reg motorL_dir, motorR_dir,
     output reg WF_LED
-	);
-	
+    );
+    
 // States
-	localparam INIT	            = 4'd0;
+    localparam INIT	            = 4'd0;
     localparam WAIT             = 4'd1;
-	localparam SEARCH	        = 4'd2;
+    localparam SEARCH	        = 4'd2;
     localparam LINE_FOLLOW_1    = 4'd3;
     localparam LINE_FOLLOW_2    = 4'd4;
     localparam LINE_FOLLOW_3    = 4'd5;
-	localparam TURN_RIGHT	    = 4'd6;
+    localparam TURN_RIGHT	    = 4'd6;
     localparam TURN_AROUND_1    = 4'd7;
     localparam TURN_AROUND_2    = 4'd8;
     localparam END              = 4'd9;
     localparam STEP_CTL         = 4'd15;
-	
+    
 // Register and Wire declaration
-	reg[3:0] next_state, current_state, return_state, next_return_state;
-	
-	reg [7:0] channel_sel;
-	wire [16:0] ttd0, ttd1, ttd2, ttd3, ttd4, ttd5, ttd6, ttd7; // int values
+    reg[3:0] next_state, current_state, return_state, next_return_state;
+    
+    reg [7:0] channel_sel;
+    wire [16:0] ttd0, ttd1, ttd2, ttd3, ttd4, ttd5, ttd6, ttd7; // int values
     wire [7:0] ir_color; // 1: black; 0: white
-	wire [16:0] ttd_min, ttd_max; // min & max of ttd. Used for calibration
-	reg [19:0] threshold, thresh_next; // Saved during calibration (INIT)
+    wire [16:0] ttd_min, ttd_max; // min & max of ttd. Used for calibration
+    reg [19:0] threshold, thresh_next; // Saved during calibration (INIT)
     wire bump; // consolidated bump switch signal
 
     wire right, left, on_track, lost, pos_ok, goal; // signals for special ir patterns
@@ -81,8 +81,8 @@ module fpga_top (
     reg [15:0] speedL, speedR, speedL_reg, speedR_reg;
     reg motorL_dir_reg, motorR_dir_reg;
 
-	assign motorL_en = driver_sel ? driverL1_en : driverL0_en;
-	assign motorR_en = driver_sel ? driverR1_en : driverR0_en;
+    assign motorL_en = driver_sel ? driverL1_en : driverL0_en;
+    assign motorR_en = driver_sel ? driverR1_en : driverR0_en;
 
     assign driverL0_en = speedctl_en;
     assign driverR0_en = speedctl_en;
@@ -99,17 +99,17 @@ module fpga_top (
     debouncer #(32'd160000) db3 (WF_CLK, pos_ok_raw, pos_ok);
     debouncer #(32'd160000)  db4 (WF_CLK, goal_raw, goal);
 
-	minmax8 #(17) comp (
-		ttd0, ttd1, ttd2, ttd3, ttd4, ttd5, ttd6, ttd7, ttd_min, ttd_max
-	);
+    minmax8 #(17) comp (
+        ttd0, ttd1, ttd2, ttd3, ttd4, ttd5, ttd6, ttd7, ttd_min, ttd_max
+    );
 
-	IRcontrol QRTX8ch (
-		WF_CLK, channel_sel, 
-		ir_snsrch0, ir_snsrch1, ir_snsrch2, ir_snsrch3,
-		ir_snsrch4, ir_snsrch5, ir_snsrch6, ir_snsrch7,
-		ttd0, ttd1, ttd2, ttd3, ttd4, ttd5, ttd6, ttd7,
-		ir_evenLED, ir_oddLED
-	);
+    IRcontrol QRTX8ch (
+        WF_CLK, channel_sel, 
+        ir_snsrch0, ir_snsrch1, ir_snsrch2, ir_snsrch3,
+        ir_snsrch4, ir_snsrch5, ir_snsrch6, ir_snsrch7,
+        ttd0, ttd1, ttd2, ttd3, ttd4, ttd5, ttd6, ttd7,
+        ir_evenLED, ir_oddLED
+    );
 
     speedctl speedctlL(WF_CLK, motorL_en, motorL_encdr, speedL, motorL_pwm);
     speedctl speedctlR(WF_CLK, motorR_en, motorR_encdr, speedR, motorR_pwm);
@@ -123,8 +123,8 @@ module fpga_top (
 
 // State Machine
 
-	always @(posedge WF_CLK) begin
-		current_state <= next_state;
+    always @(posedge WF_CLK) begin
+        current_state <= next_state;
         return_state <= next_return_state;
         threshold <= thresh_next;
         speedL_reg <= speedL;
@@ -135,9 +135,9 @@ module fpga_top (
         blink_cnt <= blink_cnt + 1;
     end
 
-		
-	always @(*)
-	begin
+        
+    always @(*)
+    begin
         channel_sel	= 8'hFF;
         thresh_next = threshold;
         next_state = INIT;
@@ -153,24 +153,24 @@ module fpga_top (
         motorR_dir = motorR_dir_reg;
         speedL = speedL_reg;
         speedR = speedR_reg;
-		casex(current_state)
-			//callibration
-			INIT: begin
+        casex(current_state)
+            //callibration
+            INIT: begin
                 WF_LED = 0;
                 motorL_dir = 0;
                 motorR_dir = 0;
                 speedL = 0;
                 speedR = 0;
-				if (~bump) begin
-					next_state = WAIT;
+                if (~bump) begin
+                    next_state = WAIT;
                     // Use biased average as threshold
                     thresh_next = ({3'd0, ttd_min} + {3'd0, ttd_min}
                                 + {3'd0, ttd_min} + {3'd0, ttd_max}) >> 2;
                 end
-				else begin
-					next_state = INIT;
+                else begin
+                    next_state = INIT;
                 end
-			end
+            end
 
             // WAIT for button press
             WAIT: begin
@@ -181,10 +181,10 @@ module fpga_top (
                 next_state = WF_BUTTON ? WAIT : SEARCH;
             end
 
-			// move forward until the sensor sees the black line
-			SEARCH: begin
+            // move forward until the sensor sees the black line
+            SEARCH: begin
                 // using direct control
-				driver_sel = 0;
+                driver_sel = 0;
                 speedctl_en = 1;
                 motorL_dir = 0;
                 motorR_dir = 0;
@@ -195,7 +195,7 @@ module fpga_top (
                     next_state = LINE_FOLLOW_1;
                 end
                 else next_state = SEARCH;
-			end
+            end
 
             LINE_FOLLOW_1: begin
                 driver_sel = 0;
@@ -305,10 +305,10 @@ module fpga_top (
                 next_state = END; // Use the red reset button on FPGA to restart
             end
 
-		endcase
+        endcase
 
         // Highest priority
         if (~bump) next_state = WAIT;
-	end
-	
+    end
+    
 endmodule

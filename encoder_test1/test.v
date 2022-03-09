@@ -1,12 +1,12 @@
 `include "pinmap.v"
 
 module fpga_top (
-	input wire WF_CLK, WF_BUTTON,
-	input wire motorL_encdr, motorR_encdr,
-	output wire motorL_pwm, motorR_pwm,
-	output wire motorL_en, motorL_dir, motorR_en, motorR_dir,
+    input wire WF_CLK, WF_BUTTON,
+    input wire motorL_encdr, motorR_encdr,
+    output wire motorL_pwm, motorR_pwm,
+    output wire motorL_en, motorL_dir, motorR_en, motorR_dir,
     output wire WF_LED
-	);
+    );
 
 wire enable;
 

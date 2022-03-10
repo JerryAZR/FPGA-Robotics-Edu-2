@@ -19,14 +19,16 @@ motors now run at the same speed!
 
 ## Tutorial
 
-### Prerequisite
+Also available on [hackster.io](https://www.hackster.io/jerryazr/lab-5-5-feedback-control-747153)
+
+### Prerequisites
 
 * [Lab 4: Motors and Movement](https://www.hackster.io/fpga-for-robotics-education/lab-4-motors-and-movement-5b9a55)
 
 * [Lab 5: Encoders and Precision Movement](https://www.hackster.io/fpga-for-robotics-education/lab-5-encoders-and-precision-movement-b87cd3)
 
 We assume that you already know how to control the motor speed using PWM
-(Pulse-width modulation) and how to read encoder outputs, so we will not cover
+(pulse-width modulation) and how to read encoder outputs, so we will not cover
 the basics here.
 
 ### Introduction
@@ -63,14 +65,14 @@ integral (I) and derivative (D) terms are not very intuitive, we will only use
 the proportional (P) term to build a simple feedback control system.
 
 In a PID controller with only the P term (i.e. P controller), the input to the
-system-under-control is propotional to the error (i.e. difference between the
+system-under-control is proportional to the error (i.e. difference between the
 desired and actual output value).
 
 We define the encoder pulse count (over a predefined interval) as the system
 output, and the change in duty cycle (rather than the duty cycle itself) as the
 input. Intuitively, we increase the duty cycle if we see too few encoder pulses,
 or decrease it if we see too many. The amount of increase or decrease is
-propotional to the difference between the desired and actual number of pulses.
+proportional to the difference between the desired and actual number of pulses.
 The following pseudo code implements this control logic:
 
 ```

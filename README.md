@@ -18,6 +18,8 @@ top level module, a Makefile, and some other private modules.
 
 ## Tutorial
 
+Also available on [hackster.io](https://www.hackster.io/jerryazr/interfacing-the-ti-rslk-max-with-webfpga-part-2-003630)
+
 ### Before You Start
 
 Please make sure that you have completed the original project [(Interfacing the

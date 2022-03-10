@@ -17,10 +17,6 @@ We have also updated the [stepctl module](stepctl.v) to generate PWM using the
 in [encoder test 1](../encoder_test1). With the updates modules, the two
 motors now run at the same speed!
 
-## Challenge
-
-Try to implement a PI, PD, or PID system by approximating the I and/or D terms.
-
 ## Tutorial
 
 ### Prerequisite

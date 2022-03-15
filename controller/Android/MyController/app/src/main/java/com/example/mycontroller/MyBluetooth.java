@@ -177,14 +177,19 @@ public class MyBluetooth {
 
             // Creating new connections to remote Bluetooth devices
             // should not be attempted while device discovery is in progress.
-            try {
+            int scan_permission = ContextCompat.checkSelfPermission(
+                    ctx,
+                    Manifest.permission.BLUETOOTH_SCAN
+            );
+
+            if (scan_permission == PackageManager.PERMISSION_GRANTED) {
                 mBluetoothAdapter.cancelDiscovery();
-            } catch (SecurityException se) {
+            } else {
                 // we don't HAVE to call cancelDiscovery.
                 // This is just for better performance.
                 // So it's fine if we don't have the permission to do so.
                 Log.i(INFO_TAG, "Can't cancel discovery: permission denied.");
-            };
+            }
 
             // Attempt to connect
             running.set(true);

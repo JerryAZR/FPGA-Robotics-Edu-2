@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -54,10 +55,6 @@ public class BluetoothFragment extends Fragment {
     private BroadcastReceiver bluetoothReceiver;
     private ArrayList<HashMap<String,String>> deviceList;
     private ActivityResultLauncher<String[]> requestPermissionLauncher;
-    private String[] desiredPermissions = new String[] {
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.BLUETOOTH_SCAN
-    };
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -99,11 +96,17 @@ public class BluetoothFragment extends Fragment {
         getActivity().registerReceiver(bluetoothReceiver, filter);
 
         // Also refresh the device list on permission grant
-        requestPermissionLauncher = registerForActivityResult(
-                new ActivityResultContracts.RequestMultiplePermissions(),
-                v -> generateDeviceList()
-        );
-        getBluetoothPermissions(desiredPermissions);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            requestPermissionLauncher = registerForActivityResult(
+                    new ActivityResultContracts.RequestMultiplePermissions(),
+                    v -> generateDeviceList()
+            );
+            String[] desiredPermissions = new String[]{
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.BLUETOOTH_SCAN
+            };
+            getBluetoothPermissions(desiredPermissions);
+        }
 
         return root;
     }

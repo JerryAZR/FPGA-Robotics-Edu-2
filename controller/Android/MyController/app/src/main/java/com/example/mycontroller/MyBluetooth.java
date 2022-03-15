@@ -1,7 +1,6 @@
 package com.example.mycontroller;
 
 import android.Manifest;
-import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -15,18 +14,12 @@ import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.collection.ArraySet;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,15 +42,12 @@ public class MyBluetooth {
     public static final String INFO_TAG = "MY_INFO";
 
     public static final UUID MY_UUID = UUID.fromString("0001101-0000-1000-8000-00805F9B34FB");
-
-    BluetoothManager mBluetoothManager = null;
-    BluetoothAdapter mBluetoothAdapter = null;
-
-    private ConnectThread mConnectThread = null;
-
-    public int bluetoothState;
+    public volatile int bluetoothState; // volatile just to be safe
     public BluetoothDevice connectedDevice = null;
     public BluetoothSocket activeSocket = null;
+    BluetoothManager mBluetoothManager = null;
+    BluetoothAdapter mBluetoothAdapter = null;
+    private ConnectThread mConnectThread = null;
 
     public MyBluetooth() {
         bluetoothState = STATE_DISCONNECTED;
@@ -147,17 +137,24 @@ public class MyBluetooth {
     }
 
     public void send(int msg) {
-        mConnectThread.send(msg);
+        if (bluetoothState == STATE_CONNECTED) {
+            mConnectThread.send(msg);
+        }
+    }
+
+    private static String timestamp() {
+        Long time = System.currentTimeMillis();
+        return time.toString();
     }
 
     private class ConnectThread extends Thread {
-        private BluetoothSocket mSocket;
         private final BluetoothDevice mDevice;
-        private InputStream inStream;
-        private OutputStream outStream;
         private final Context ctx;
         private final AtomicBoolean running = new AtomicBoolean(false);
         private final AtomicInteger previousMsg = new AtomicInteger(0);
+        private BluetoothSocket mSocket;
+        private InputStream inStream;
+        private OutputStream outStream;
 
         public ConnectThread(Context ctx, BluetoothDevice device) {
             this.mDevice = device;
@@ -175,17 +172,21 @@ public class MyBluetooth {
             String deviceName = mDevice.getName();
             toast(ctx, "Connecting to " + deviceName, Toast.LENGTH_SHORT);
 
-            // Creating new connections to remote Bluetooth devices
-            // should not be attempted while device discovery is in progress.
-            int scan_permission = ContextCompat.checkSelfPermission(
-                    ctx,
-                    Manifest.permission.BLUETOOTH_SCAN
-            );
+            int scan_permission = PackageManager.PERMISSION_GRANTED;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // Only necessary on recent devices
+                scan_permission = ContextCompat.checkSelfPermission(
+                        ctx,
+                        Manifest.permission.BLUETOOTH_SCAN
+                );
+            }
 
             if (scan_permission == PackageManager.PERMISSION_GRANTED) {
+                // Creating new connections to remote Bluetooth devices
+                // should not be attempted while device discovery is in progress.
                 mBluetoothAdapter.cancelDiscovery();
             } else {
-                // we don't HAVE to call cancelDiscovery.
+                // That being said, we don't HAVE to call cancelDiscovery.
                 // This is just for better performance.
                 // So it's fine if we don't have the permission to do so.
                 Log.i(INFO_TAG, "Can't cancel discovery: permission denied.");
@@ -217,7 +218,9 @@ public class MyBluetooth {
             while (running.get()) {
                 try {
                     Thread.sleep(2000);
-                    outStream.write(previousMsg.get());
+                    int cached = previousMsg.get();
+                    outStream.write(cached);
+                    Log.i(INFO_TAG, timestamp() + ": Sending cached byte " + cached);
                 } catch (InterruptedException interruptedException) {
                     Log.i(INFO_TAG, "Interrupt during sleep", interruptedException);
                 } catch (IOException ioException) {
@@ -227,13 +230,20 @@ public class MyBluetooth {
             }
         }
 
-        public void send(int msg){
+        public void send(int msg) {
             previousMsg.set(msg);
 
-            try {
-                outStream.write(msg);
-            } catch (IOException ioException) {
-                Log.e(ERROR_TAG, "Failed to send byte", ioException);
+            if (mSocket.isConnected()) {
+                try {
+                    outStream.write(msg);
+                    Log.i(INFO_TAG,
+                            "Sending byte " + (msg & 0xFF) + " to " + mDevice.getName());
+                } catch (IOException ioException) {
+                    Log.e(ERROR_TAG, "Failed to send byte", ioException);
+                    close();
+                }
+            } else {
+                Log.i(INFO_TAG, "Socket already closed.");
                 close();
             }
         }

@@ -36,8 +36,9 @@ public class MyBluetooth {
 
     public static final int BLUETOOTH_OK = 0;
     public static final int BLUETOOTH_NOT_AVAILABLE = 1;
-    public static final int BLUETOOTH_NO_PERMISSION = 2;
-    public static final int BLUETOOTH_DISABLED = 3;
+    public static final int BLUETOOTH_NO_CONNECT = 2;
+    public static final int BLUETOOTH_NO_SCAN = 3;
+    public static final int BLUETOOTH_DISABLED = 4;
     public static final int UNKNOWN_ERROR = -1;
 
     public static final int STATE_DISCONNECTED = 0;
@@ -70,30 +71,26 @@ public class MyBluetooth {
         }
     }
 
-    public int requestPermission(Context ctx, Activity act) {
-        if (ctx == null || act == null) {
+    public int getStatus(Context ctx) {
+        if (ctx == null) {
             return UNKNOWN_ERROR;
         }
 
         if (mBluetoothAdapter == null) {
             return BLUETOOTH_NOT_AVAILABLE;
         }
-
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.S) {
+        int permission_code;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             // Only necessary on recent devices
-            int permission1 = ContextCompat.checkSelfPermission(
+            permission_code = ContextCompat.checkSelfPermission(
                     ctx, Manifest.permission.BLUETOOTH_CONNECT);
-            int permission2 = ContextCompat.checkSelfPermission(
+            if (permission_code != PackageManager.PERMISSION_GRANTED) {
+                return BLUETOOTH_NO_CONNECT;
+            }
+            permission_code = ContextCompat.checkSelfPermission(
                     ctx, Manifest.permission.BLUETOOTH_SCAN);
-            if (permission1 != PackageManager.PERMISSION_GRANTED ||
-                    permission2 != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(
-                        act,
-                        new String[]{
-                                Manifest.permission.BLUETOOTH_CONNECT,
-                                Manifest.permission.BLUETOOTH_SCAN},
-                        0);
-                return BLUETOOTH_NO_PERMISSION;
+            if (permission_code != PackageManager.PERMISSION_GRANTED) {
+                return BLUETOOTH_NO_SCAN;
             }
         }
 
@@ -106,36 +103,16 @@ public class MyBluetooth {
         return BLUETOOTH_OK;
     }
 
-    public int getStatus(Context ctx) {
-        if (mBluetoothAdapter == null) {
-            return BLUETOOTH_NOT_AVAILABLE;
-        }
-
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.S) {
-            // Only necessary on recent devices
-            int permission1 = ContextCompat.checkSelfPermission(
-                    ctx, Manifest.permission.BLUETOOTH_CONNECT);
-            int permission2 = ContextCompat.checkSelfPermission(
-                    ctx, Manifest.permission.BLUETOOTH_SCAN);
-            if (permission1 != PackageManager.PERMISSION_GRANTED ||
-                    permission2 != PackageManager.PERMISSION_GRANTED) {
-                return BLUETOOTH_NO_PERMISSION;
-            }
-        }
-
-        if (!mBluetoothAdapter.isEnabled()) {
-            return BLUETOOTH_DISABLED;
-        }
-
-        return BLUETOOTH_OK;
-    }
-
     public Set<BluetoothDevice> getPairedDevices() {
         if (mBluetoothAdapter == null) {
             return new ArraySet<>();
         }
 
-        return mBluetoothAdapter.getBondedDevices();
+        try {
+            return mBluetoothAdapter.getBondedDevices();
+        } catch (SecurityException se) {
+            return new ArraySet<>();
+        }
     }
 
     public synchronized void connect(Context ctx, BluetoothDevice device) {
@@ -200,7 +177,14 @@ public class MyBluetooth {
 
             // Creating new connections to remote Bluetooth devices
             // should not be attempted while device discovery is in progress.
-            mBluetoothAdapter.cancelDiscovery();
+            try {
+                mBluetoothAdapter.cancelDiscovery();
+            } catch (SecurityException se) {
+                // we don't HAVE to call cancelDiscovery.
+                // This is just for better performance.
+                // So it's fine if we don't have the permission to do so.
+                Log.i(INFO_TAG, "Can't cancel discovery: permission denied.");
+            };
 
             // Attempt to connect
             running.set(true);

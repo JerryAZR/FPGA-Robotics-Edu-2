@@ -1,12 +1,15 @@
 package com.example.mycontroller.ui.bluetooth;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,7 +20,12 @@ import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContract;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
@@ -38,14 +46,18 @@ public class BluetoothFragment extends Fragment {
     private TextView textView;
     private ListView deviceListView;
 
-    private static final int REQUEST_BLUETOOTH_CONNECT = 0;
     private static final String DEVICE_NAME = "primary";
     private static final String DEVICE_MAC = "secondary";
 
     private MyBluetooth myBluetooth;
     private SimpleAdapter mSimpleAdapter;
     private BroadcastReceiver bluetoothReceiver;
-    ArrayList<HashMap<String,String>> deviceList;
+    private ArrayList<HashMap<String,String>> deviceList;
+    private ActivityResultLauncher<String[]> requestPermissionLauncher;
+    private String[] desiredPermissions = new String[] {
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN
+    };
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -86,7 +98,30 @@ public class BluetoothFragment extends Fragment {
         IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         getActivity().registerReceiver(bluetoothReceiver, filter);
 
+        // Also refresh the device list on permission grant
+        requestPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestMultiplePermissions(),
+                v -> generateDeviceList()
+        );
+        getBluetoothPermissions(desiredPermissions);
+
         return root;
+    }
+
+    private void getBluetoothPermissions(String[] permissions) {
+        int return_code;
+        ArrayList<String> requests = new ArrayList<>();
+        // Check if permission is already granted
+        for (String pm : permissions) {
+            return_code = ContextCompat.checkSelfPermission(getContext(), pm);
+            if (return_code != PackageManager.PERMISSION_GRANTED) {
+                requests.add(pm);
+            }
+        }
+        // Request for permission if not already granted
+        if (requests.size() > 0) {
+            requestPermissionLauncher.launch(requests.toArray(new String[0]));
+        }
     }
 
     @Override
@@ -98,7 +133,7 @@ public class BluetoothFragment extends Fragment {
 
     private boolean generateDeviceList() {
 
-        int return_code = myBluetooth.requestPermission(getContext(), getActivity());
+        int return_code = myBluetooth.getStatus(getContext());
 
         switch (return_code) {
             case MyBluetooth.BLUETOOTH_OK:
@@ -107,8 +142,12 @@ public class BluetoothFragment extends Fragment {
             case MyBluetooth.BLUETOOTH_NOT_AVAILABLE:
                 textView.setText("Bluetooth not available.");
                 return false;
-            case MyBluetooth.BLUETOOTH_NO_PERMISSION:
+            case MyBluetooth.BLUETOOTH_NO_CONNECT:
+                textView.setText("Permission not granted.");
                 return false;
+            case MyBluetooth.BLUETOOTH_NO_SCAN:
+                Log.i("MY_INFO", "Scan permission not granted");
+                break;
             case MyBluetooth.BLUETOOTH_DISABLED:
                 textView.setText("Bluetooth not enabled.");
                 Toast.makeText(

@@ -1,6 +1,11 @@
 package com.example.mycontroller.ui.bluetooth;
 
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,6 +19,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.mycontroller.MainViewModel;
@@ -38,6 +44,7 @@ public class BluetoothFragment extends Fragment {
 
     private MyBluetooth myBluetooth;
     private SimpleAdapter mSimpleAdapter;
+    private BroadcastReceiver bluetoothReceiver;
     ArrayList<HashMap<String,String>> deviceList;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -59,12 +66,33 @@ public class BluetoothFragment extends Fragment {
 
         generateDeviceList();
 
+        // Set up a broadcast receiver so that the device list is refreshed
+        // when bluetooth is turned on/off
+        bluetoothReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                final String action = intent.getAction();
+
+                if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
+                    int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
+                            BluetoothAdapter.ERROR);
+                    if (state == BluetoothAdapter.STATE_ON ||
+                        state == BluetoothAdapter.STATE_OFF) {
+                        generateDeviceList();
+                    }
+                }
+            }
+        };
+        IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+        getActivity().registerReceiver(bluetoothReceiver, filter);
+
         return root;
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        getActivity().unregisterReceiver(bluetoothReceiver);
         binding = null;
     }
 
@@ -124,13 +152,8 @@ public class BluetoothFragment extends Fragment {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 HashMap<String,String> item;
                 item = deviceList.get(position);
-                String device_name = item.get(DEVICE_NAME);
                 String device_mac = item.get(DEVICE_MAC);
-                Toast.makeText(
-                        getContext(),
-                        "Connecting to " + device_name,
-                        Toast.LENGTH_SHORT).show();
-                myBluetooth.connect(device_mac);
+                myBluetooth.connect(getContext(), device_mac);
             }
         });
 

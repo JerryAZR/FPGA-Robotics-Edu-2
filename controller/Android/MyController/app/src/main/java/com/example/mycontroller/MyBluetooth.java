@@ -10,6 +10,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -104,6 +106,30 @@ public class MyBluetooth {
         return BLUETOOTH_OK;
     }
 
+    public int getStatus(Context ctx) {
+        if (mBluetoothAdapter == null) {
+            return BLUETOOTH_NOT_AVAILABLE;
+        }
+
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.S) {
+            // Only necessary on recent devices
+            int permission1 = ContextCompat.checkSelfPermission(
+                    ctx, Manifest.permission.BLUETOOTH_CONNECT);
+            int permission2 = ContextCompat.checkSelfPermission(
+                    ctx, Manifest.permission.BLUETOOTH_SCAN);
+            if (permission1 != PackageManager.PERMISSION_GRANTED ||
+                    permission2 != PackageManager.PERMISSION_GRANTED) {
+                return BLUETOOTH_NO_PERMISSION;
+            }
+        }
+
+        if (!mBluetoothAdapter.isEnabled()) {
+            return BLUETOOTH_DISABLED;
+        }
+
+        return BLUETOOTH_OK;
+    }
+
     public Set<BluetoothDevice> getPairedDevices() {
         if (mBluetoothAdapter == null) {
             return new ArraySet<>();
@@ -112,7 +138,7 @@ public class MyBluetooth {
         return mBluetoothAdapter.getBondedDevices();
     }
 
-    public synchronized void connect(BluetoothDevice device) {
+    public synchronized void connect(Context ctx, BluetoothDevice device) {
         if (bluetoothState == STATE_CONNECTING) {
             // Do nothing if a connection is being established.
             return;
@@ -134,13 +160,13 @@ public class MyBluetooth {
 
         bluetoothState = STATE_CONNECTING;
         // Start the thread to connect with the given device
-        mConnectThread = new ConnectThread(device);
+        mConnectThread = new ConnectThread(ctx, device);
         mConnectThread.start();
     }
 
-    public void connect(String mac) {
+    public void connect(Context ctx, String mac) {
         BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mac);
-        connect(device);
+        connect(ctx, device);
     }
 
     public void send(int msg) {
@@ -149,14 +175,16 @@ public class MyBluetooth {
 
     private class ConnectThread extends Thread {
         private BluetoothSocket mSocket;
-        private BluetoothDevice mDevice;
+        private final BluetoothDevice mDevice;
         private InputStream inStream;
         private OutputStream outStream;
-        private AtomicBoolean running = new AtomicBoolean(false);
-        private AtomicInteger previousMsg = new AtomicInteger(3);
+        private final Context ctx;
+        private final AtomicBoolean running = new AtomicBoolean(false);
+        private final AtomicInteger previousMsg = new AtomicInteger(0);
 
-        public ConnectThread(BluetoothDevice device) {
-            mDevice = device;
+        public ConnectThread(Context ctx, BluetoothDevice device) {
+            this.mDevice = device;
+            this.ctx = ctx;
 
             // Get a BluetoothSocket for a connection with the given BluetoothDevice
             try {
@@ -167,7 +195,8 @@ public class MyBluetooth {
         }
 
         public void run() {
-            Log.i(INFO_TAG, "Connecting to " + mDevice.getName());
+            String deviceName = mDevice.getName();
+            toast(ctx, "Connecting to " + deviceName, Toast.LENGTH_SHORT);
 
             // Creating new connections to remote Bluetooth devices
             // should not be attempted while device discovery is in progress.
@@ -177,28 +206,28 @@ public class MyBluetooth {
             running.set(true);
             try {
                 mSocket.connect();
-                Log.i(INFO_TAG, "Successfully connected to device");
+                toast(ctx, "Connected to " + deviceName, Toast.LENGTH_SHORT);
                 synchronized (MyBluetooth.this) {
                     bluetoothState = STATE_CONNECTED;
                     connectedDevice = mDevice;
                     activeSocket = mSocket;
                 }
             } catch (Exception connect_fail) {
-                Log.e(ERROR_TAG, "Failed to connect to device", connect_fail);
+                toast(ctx, "Failed to connect to " + deviceName, Toast.LENGTH_SHORT);
                 close();
             }
 
             try {
                 inStream = mSocket.getInputStream();
                 outStream = mSocket.getOutputStream();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 Log.e(ERROR_TAG, "Failed to get IO stream", e);
                 close();
             }
 
             while (running.get()) {
                 try {
-                    Thread.sleep(5000);
+                    Thread.sleep(2000);
                     outStream.write(previousMsg.get());
                 } catch (InterruptedException interruptedException) {
                     Log.i(INFO_TAG, "Interrupt during sleep", interruptedException);
@@ -234,6 +263,11 @@ public class MyBluetooth {
                 activeSocket = null;
             }
             running.set(false);
+        }
+
+        private void toast(Context ctx, String msg, int duration) {
+            Handler toastHandler = new Handler(Looper.getMainLooper());
+            toastHandler.post(() -> Toast.makeText(ctx, msg, duration).show());
         }
     }
 

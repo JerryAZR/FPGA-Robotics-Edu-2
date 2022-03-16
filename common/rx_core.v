@@ -73,10 +73,22 @@ module Rx_core (
             end
 
             DONE: begin
-                data_reg_next = data_reg;
-                Rx_done = 1'b1;
+                data_reg_next = data_reg; // keep the read data unchanged
 
-                state_next = Rx ? IDLE : DONE; // Read the end bit
+                if (timer == BAUD_RATE) begin // Read the end bit
+                    if (Rx) begin
+                        // All is well
+                        state_next = IDLE;
+                        Rx_done = 1'b1;
+                    end else begin
+                        // Very simple error handling: wait until Rx high
+                        state_next = DONE;
+                        timer_next = timer;
+                    end
+                end else begin
+                    state_next = DONE;
+                    timer_next = timer + 1;
+                end
             end
         endcase
     end

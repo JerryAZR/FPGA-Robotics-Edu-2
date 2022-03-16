@@ -14,10 +14,7 @@ module fpga_top (
     output wire motorL_en, motorR_en,
     output wire motorL_dir, motorR_dir,
     output reg WF_LED,
-    output reg ledFL,
-    output reg ledFR,
-    output reg ledBL,
-    output reg ledBR
+    output wire ledFL, ledFR, ledBL, ledBR
     );
 
 // Disable all the unused signals
@@ -49,6 +46,11 @@ reg led_next;
 
 Rx_wrapper receiver(WF_CLK, ~WF_BUTTON, Rx, Rx_data);
 
+assign ledFL = Rx_data[3];
+assign ledFR = Rx_data[2];
+assign ledBL = Rx_data[1];
+assign ledBR = Rx_data[0];
+
 always @(posedge WF_CLK) begin
     state <= WF_BUTTON ? state_next : SLEEP;
     timer <= timer_next;
@@ -62,17 +64,12 @@ always @(*) begin
     counter_next = 8'd0;
     led_next = 1'b1;
 
-    ledFL = 0;
-    ledBL = 0;
-    ledFR = 0;
-    ledBR = 0;
-
     case (state)
         SLEEP: begin
             if (timer == (SECOND << 2)) begin // wake up after 2 seconds
                 state_next = BLINK;
                 timer_next = 32'd0;
-                counter_next = Rx_data;
+                counter_next = Rx_data & 8'h0F; // only keep the last 4 bits
                 led_next = 1'b0;
             end else begin
                 state_next = SLEEP;
@@ -91,18 +88,6 @@ always @(*) begin
                 timer_next = timer + 1;
                 led_next = WF_LED;
                 counter_next = counter;
-            end
-
-            if (WF_LED) begin
-                ledFL = Rx_data[3];
-                ledFR = Rx_data[2];
-                ledBL = Rx_data[1];
-                ledBR = Rx_data[0];
-            end else begin
-                ledFL = Rx_data[7];
-                ledFR = Rx_data[6];
-                ledBL = Rx_data[5];
-                ledBR = Rx_data[4];
             end
 
             state_next = (counter == 8'd0) ? SLEEP : BLINK;

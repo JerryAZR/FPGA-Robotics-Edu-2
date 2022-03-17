@@ -2,21 +2,27 @@ from bluetooth import discover_devices
 from device import Device
 from controller import Controller
 import sys
-import termios
 
+platform = sys.platform
 table_format = "| {:<6}| {:<12}| {:<18}|"
 
+if platform.lower().startswith("win"):
+    import msvcrt
+    def enable_echo(enable):
+        while msvcrt.kbhit():
+            msvcrt.getch()
+else:
+    import termios
+    def enable_echo(enable):
+        fd = sys.stdin.fileno()
+        new = termios.tcgetattr(fd)
+        if enable:
+            new[3] |= termios.ECHO
+        else:
+            new[3] &= ~termios.ECHO
 
-def enable_echo(enable):
-    fd = sys.stdin.fileno()
-    new = termios.tcgetattr(fd)
-    if enable:
-        new[3] |= termios.ECHO
-    else:
-        new[3] &= ~termios.ECHO
-
-    termios.tcsetattr(fd, termios.TCSANOW, new)
-    termios.tcflush(fd, termios.TCIFLUSH)
+        termios.tcsetattr(fd, termios.TCSANOW, new)
+        termios.tcflush(fd, termios.TCIFLUSH)
 
 if __name__ == "__main__":
     rerun = True

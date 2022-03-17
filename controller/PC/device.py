@@ -23,3 +23,9 @@ class Device:
 
     def disconnect(self) -> None:
         self.socket.close()
+
+    def reset(self) -> None:
+        # reset the socket
+        self.socket.close()
+        self.socket = socket.socket(
+            socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)

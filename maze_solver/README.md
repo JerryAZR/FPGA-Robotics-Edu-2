@@ -27,18 +27,18 @@ only target a specific type of mazes: the "perfect" ones.
 A perfect maze contains no loops. Therefore, they can be solved using the right-hand rule,
 in which one would keep the right hand on the wall until an exit (a.k.a. the goal) is found.
 Our robot has no hand (unless you consider the bumper switches as "hands"), therefore we
-will use another strategy: turning right whenever possible. Note that this strategt is
+will use another strategy: turning right whenever possible. Note that this strategy is
 actually equivalent to the right-hand rule.
 
 In this example, the maze would be drawn using black lines, and the goal would be a special
-pattern (three parallel lines). Alternatively you could use the bumper switch to detect the goal
-(e.g. by placing a water bottle there).
+pattern (three parallel lines). Alternatively, you could use the bumper switch to detect the goal
+(e.g., by placing a water bottle there).
 
 ### Recognizing Patterns
 
 Recall that the line sensor is essentially 8 infrared (IR) sensors in a row. These IR sensors
 would respond differently to black and white surface. For the sake of this discussion,
-we assume that thr IR sensor would be 1 if it sees black, or 0 if it sees white.
+we assume that the IR sensor would be 1 if it sees black, or 0 if it sees white.
 For example, the pattern
 
  Sensor Index | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0 |
@@ -83,7 +83,7 @@ and the other one backward by 360 degrees.
 ### Line Following
 
 With pattern recognition and the corresponding control logic implemented, the robot should
-be able to solve small perfect mazes. However, it will like fail when given large mazes
+be able to solve small perfect mazes. However, it will likely fail when given large mazes
 because the non-perfect turns and initial position could mess up the direction. We could solve
 this problem by reusing the line-following control logic used in Lab 6. In the code example on GitHub,
 we made a state machine as the controller, there are two "LINE_FOLLOW" states designed for

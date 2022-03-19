@@ -5,6 +5,7 @@ import sys
 
 platform = sys.platform
 table_format = "| {:<6}| {:<12}| {:<18}|"
+ARROW_KEYS = u"\u2191 \u2190 \u2193 \u2192"
 
 if platform.lower().startswith("win"):
     import msvcrt
@@ -85,6 +86,9 @@ if __name__ == "__main__":
                 exit(0)
 
     print("Connected")
+    print("Test: Use number keys to send numbers to the device")
+    print(f"Controller: Use WASD / {ARROW_KEYS} to control robot movements")
+    print("Quit: 'q' or Esc")
     ctrl = Controller(hc06)
     enable_echo(False)
     ctrl.run()

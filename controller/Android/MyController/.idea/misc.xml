@@ -8,13 +8,17 @@
         <entry key="app/src/main/res/drawable/ic_launcher_background.xml" value="0.171875" />
         <entry key="app/src/main/res/drawable/ic_menu_bluetooth.xml" value="0.32135416666666666" />
         <entry key="app/src/main/res/drawable/ic_menu_camera.xml" value="0.171875" />
+        <entry key="app/src/main/res/drawable/ic_menu_controller.xml" value="0.16666666666666666" />
         <entry key="app/src/main/res/drawable/ic_menu_gallery.xml" value="0.171875" />
         <entry key="app/src/main/res/drawable/ic_menu_info.xml" value="0.171875" />
         <entry key="app/src/main/res/drawable/ic_menu_slideshow.xml" value="0.171875" />
+        <entry key="app/src/main/res/drawable/ic_menu_test.xml" value="0.16666666666666666" />
+        <entry key="app/src/main/res/drawable/ic_swap_vertical_circle.xml" value="0.16666666666666666" />
         <entry key="app/src/main/res/drawable/side_nav_bar.xml" value="0.32135416666666666" />
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.17481884057971014" />
         <entry key="app/src/main/res/layout/app_bar_main.xml" value="0.146875" />
         <entry key="app/src/main/res/layout/content_main.xml" value="0.17481884057971014" />
+        <entry key="app/src/main/res/layout/fragment_controller.xml" value="0.14166666666666666" />
         <entry key="app/src/main/res/layout/fragment_gallery.xml" value="0.1" />
         <entry key="app/src/main/res/layout/fragment_home.xml" value="0.146875" />
         <entry key="app/src/main/res/layout/fragment_info.xml" value="0.146875" />

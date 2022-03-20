@@ -16,8 +16,35 @@
         android:textAlignment="center"
         android:textSize="20sp"
         android:text="@string/controller_header"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <io.github.controlwear.virtual.joystick.android.JoystickView
+        android:id="@+id/joystick_left"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:JV_buttonDirection="vertical"
+        app:JV_buttonImage="@drawable/grey_ball"
+        android:background="@drawable/dpad_left"
+        app:JV_backgroundSizeRatio="50%"
+        app:JV_buttonSizeRatio="25%"
+        app:layout_constraintTop_toBottomOf="@id/text_controller"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/joystick_right"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <io.github.controlwear.virtual.joystick.android.JoystickView
+        android:id="@+id/joystick_right"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:JV_buttonDirection="horizontal"
+        app:JV_buttonImage="@drawable/grey_ball"
+        android:background="@drawable/dpad_right"
+        app:JV_backgroundSizeRatio="50%"
+        app:JV_buttonSizeRatio="25%"
+        app:layout_constraintTop_toBottomOf="@id/text_controller"
+        app:layout_constraintStart_toEndOf="@id/joystick_left"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

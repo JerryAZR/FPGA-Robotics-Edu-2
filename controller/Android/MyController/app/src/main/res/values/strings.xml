@@ -8,11 +8,15 @@
     <string name="action_settings">Settings (not implemented)</string>
     <string name="test_header">Send a number to your bluetooth device</string>
     <string name="controller_header">Controller placeholder</string>
+    <string name="bluetooth_classic_header">Select a paired device</string>
+    <string name="bluetooth_le_header">Select a nearby BLE device</string>
 
     <string name="menu_bluetooth">Bluetooth</string>
     <string name="menu_test">Test</string>
     <string name="menu_controller">Controller</string>
     <string name="menu_info">About</string>
 
-    <string name="button_refresh">Refresh</string>
+    <string name="button_refresh">Classic</string>
+    <string name="ble_refresh">BLE</string>
+    <string name="unknown_device">unknown</string>
 </resources>

@@ -3,8 +3,15 @@ package com.example.mycontroller;
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSocket;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.bluetooth.le.ScanCallback;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -20,6 +27,7 @@ import androidx.core.content.ContextCompat;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -34,20 +42,31 @@ public class MyBluetooth {
     public static final int BLUETOOTH_DISABLED = 4;
     public static final int UNKNOWN_ERROR = -1;
 
-    public static final int STATE_DISCONNECTED = 0;
-    public static final int STATE_CONNECTING = 1;
-    public static final int STATE_CONNECTED = 2;
+    public static final int STATE_DISCONNECTED = BluetoothProfile.STATE_DISCONNECTED;
+    public static final int STATE_CONNECTING = BluetoothProfile.STATE_CONNECTING;
+    public static final int STATE_CONNECTED = BluetoothProfile.STATE_CONNECTED;
 
     public static final String ERROR_TAG = "MY_ERROR";
     public static final String INFO_TAG = "MY_INFO";
 
+    private static final long BLE_SCAN_PERIOD = 4000;
+
     public static final UUID MY_UUID = UUID.fromString("0001101-0000-1000-8000-00805F9B34FB");
+    public static final UUID BLE_SERV_UUID = UUID.fromString("0000FFE0-0000-1000-8000-00805F9B34FB");
+    public static final UUID BLE_CHAR_UUID = UUID.fromString("0000FFE1-0000-1000-8000-00805F9B34FB");
     public volatile int bluetoothState; // volatile just to be safe
-    public BluetoothDevice connectedDevice = null;
-    public BluetoothSocket activeSocket = null;
-    BluetoothManager mBluetoothManager = null;
-    BluetoothAdapter mBluetoothAdapter = null;
-    private ConnectThread mConnectThread = null;
+    private BluetoothLeScanner leScanner;
+    private PackageManager mPackageManager;
+    public BluetoothDevice connectedDevice;
+    public BluetoothSocket activeSocket;
+    private BluetoothManager mBluetoothManager;
+    private BluetoothAdapter mBluetoothAdapter;
+    private BluetoothGatt mBluetoothGATT;
+    private BluetoothGattCharacteristic mBluetoothGattCharacteristic;
+    private ConnectThread mConnectThread;
+    private BLEThread mBLEThread;
+    private ScanCallback lastScanCallback;
+    private boolean isBLE = false;
 
     public MyBluetooth() {
         bluetoothState = STATE_DISCONNECTED;
@@ -58,6 +77,7 @@ public class MyBluetooth {
             mBluetoothManager = (BluetoothManager) ctx.getSystemService(
                     Context.BLUETOOTH_SERVICE);
             mBluetoothAdapter = mBluetoothManager.getAdapter();
+            mPackageManager = ctx.getPackageManager();
         }
     }
 
@@ -105,46 +125,191 @@ public class MyBluetooth {
         }
     }
 
+    public void getBLEDevices(ScanCallback callback) {
+        if (mBluetoothAdapter == null) {
+            return;
+        }
+        if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+            leScanner = mBluetoothAdapter.getBluetoothLeScanner();
+        }
+        if (leScanner == null) {
+            return;
+        }
+        lastScanCallback = callback;
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Log.i(INFO_TAG, "Scan period exceeded, stopping...");
+                leScanner.stopScan(callback);
+            }
+        }, BLE_SCAN_PERIOD);
+        leScanner.startScan(callback);
+    }
+
+    public void stopBLEScan() {
+        if (leScanner == null || lastScanCallback == null) {
+            return;
+        }
+        leScanner.stopScan(lastScanCallback);
+    }
+
     public synchronized void connect(Context ctx, BluetoothDevice device) {
         if (bluetoothState == STATE_CONNECTING) {
             // Do nothing if a connection is being established.
             return;
         }
+
+        bluetoothState = STATE_CONNECTING;
+        // Start the thread to connect with the given device
+        if (mConnectThread != null) {
+            mConnectThread.close();
+        }
+        mConnectThread = new ConnectThread(ctx, device);
+        isBLE = false; // connecting to classic device
+        mConnectThread.start();
+    }
+
+    public void connect(Context ctx, String mac) {
+        BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mac);
+        stopBLEScan();
+        if (conditionalDisconnect(device)) {
+            connect(ctx, device);
+        }
+    }
+
+    public void connectBLE(Context ctx, String mac) {
+        BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mac);
+        stopBLEScan();
+        if (conditionalDisconnect(device)) {
+            connectBLE(ctx, device);
+        }
+    }
+
+    public synchronized void connectBLE(Context ctx, BluetoothDevice device) {
+        if (bluetoothState == STATE_CONNECTING) {
+            // Do nothing if a connection is being established.
+            return;
+        }
+        Toast.makeText(ctx,
+                "Connecting to " + device.getName(),
+                Toast.LENGTH_SHORT).show();
+
+        isBLE = true; // connecting to BLE device
+
+        BluetoothGattCallback bluetoothGattCallback = new BluetoothGattCallback() {
+            @Override
+            public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+                super.onConnectionStateChange(gatt, status, newState);
+                synchronized (MyBluetooth.this) {
+                    bluetoothState = newState;
+                }
+                if (newState == STATE_CONNECTED) {
+                    Log.i(INFO_TAG, "Connected");
+                    toast(ctx, "Connected to " + device.getName(),
+                            Toast.LENGTH_SHORT);
+                    connectedDevice = gatt.getDevice();
+                    gatt.discoverServices();
+                } else if (newState == STATE_DISCONNECTED) {
+                    Log.i(INFO_TAG, "Disconnected");
+                    toast(ctx, gatt.getDevice().getName() + " disconnected",
+                            Toast.LENGTH_SHORT);
+                    gatt.close();
+                    // No need to close the thread here because it will detect the change
+                }
+            }
+
+            @Override
+            public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+                super.onServicesDiscovered(gatt, status);
+                List<BluetoothGattService> services = gatt.getServices();
+                Log.i(INFO_TAG, "onServicesDiscovered callback");
+                for (BluetoothGattService service : services) {
+                    Log.i(INFO_TAG, "Service: " + service.getUuid().toString());
+                }
+                BluetoothGattService service = gatt.getService(BLE_SERV_UUID);
+                List<BluetoothGattCharacteristic> charList =
+                        service.getCharacteristics();
+                for (BluetoothGattCharacteristic characteristic : charList) {
+                    Log.i(INFO_TAG, "Char: " + characteristic.getUuid().toString());
+                }
+                mBluetoothGattCharacteristic = service.getCharacteristic(BLE_CHAR_UUID);
+                mBLEThread.setGatt(gatt);
+                mBLEThread.setCharacteristic(mBluetoothGattCharacteristic);
+            }
+        };
+
+        try {
+            mBluetoothGATT = device.connectGatt(ctx, false, bluetoothGattCallback);
+        } catch (Exception e) {
+            Log.e(ERROR_TAG,
+                    "Failed to connect to BLE device " + device.getName(), e);
+            return;
+        }
+        if (mBLEThread != null) {
+            mBLEThread.close();
+        }
+        mBLEThread = new BLEThread();
+        mBLEThread.start();
+    }
+
+    public void disconnect() {
+        conditionalDisconnect(null);
+    }
+
+    public synchronized boolean conditionalDisconnect(BluetoothDevice device) {
         if (bluetoothState == STATE_CONNECTED && connectedDevice != null) {
             String connected_mac = connectedDevice.getAddress();
-            String target_mac = device.getAddress();
+            String target_mac;
+            if (device == null) {
+                target_mac = null;
+            } else {
+                target_mac = device.getAddress();
+            }
             if (connected_mac.equals(target_mac)) {
                 Log.i(INFO_TAG, "Already connected");
-                return;
+                return false;
             } else {
                 // disconnect
                 Log.i(INFO_TAG, "Connected to another device. Disconnecting...");
                 if (mConnectThread != null) {
                     mConnectThread.close();
                 }
+                // Also check ble state
+                if (mBLEThread != null) {
+                    mBLEThread.close();
+                }
             }
+        } else {
+            Log.i(INFO_TAG, "Nothing to disconnect");
         }
-
-        bluetoothState = STATE_CONNECTING;
-        // Start the thread to connect with the given device
-        mConnectThread = new ConnectThread(ctx, device);
-        mConnectThread.start();
-    }
-
-    public void connect(Context ctx, String mac) {
-        BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mac);
-        connect(ctx, device);
+        return true; // can proceed with connection
     }
 
     public void send(int msg) {
         if (bluetoothState == STATE_CONNECTED) {
-            mConnectThread.send(msg);
+            if (isBLE) {
+                // send msg to BLE device
+                mBLEThread.send(msg);
+            } else {
+                // send msg to classic device
+                mConnectThread.send(msg);
+            }
         }
     }
 
     private static String timestamp() {
         Long time = System.currentTimeMillis();
         return time.toString();
+    }
+
+    public boolean ble_available() {
+        return mPackageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
+    }
+
+    private void toast(Context ctx, String msg, int duration) {
+        Handler toastHandler = new Handler(Looper.getMainLooper());
+        toastHandler.post(() -> Toast.makeText(ctx, msg, duration).show());
     }
 
     private class ConnectThread extends Thread {
@@ -249,6 +414,7 @@ public class MyBluetooth {
         }
 
         public void close() {
+            if (!running.get()) return; // Already closed
             try {
                 mSocket.close();
                 Log.i(INFO_TAG, "Closing socket");
@@ -263,11 +429,87 @@ public class MyBluetooth {
             }
             running.set(false);
         }
-
-        private void toast(Context ctx, String msg, int duration) {
-            Handler toastHandler = new Handler(Looper.getMainLooper());
-            toastHandler.post(() -> Toast.makeText(ctx, msg, duration).show());
-        }
     }
 
+    private class BLEThread extends Thread {
+        private final AtomicBoolean running;
+        private final AtomicInteger previousMsg;
+        private final AtomicBoolean charReady;
+
+        private BluetoothGattCharacteristic characteristic;
+        private BluetoothGatt gatt;
+
+        public BLEThread() {
+            running = new AtomicBoolean(false);
+            previousMsg = new AtomicInteger(0);
+            charReady = new AtomicBoolean(false);
+        }
+
+        public void setCharacteristic(BluetoothGattCharacteristic characteristic) {
+            this.characteristic = characteristic;
+            charReady.set(characteristic != null);
+        }
+
+        public void setGatt(BluetoothGatt gatt) {
+            this.gatt = gatt;
+        }
+
+        @Override
+        public void run() {
+            running.set(true);
+            while (running.get()) {
+                try {
+                    Thread.sleep(2000);
+                    if (!charReady.get()) continue;
+                    if (mBluetoothManager.getConnectionState(gatt.getDevice(),
+                            BluetoothProfile.GATT_SERVER) == STATE_DISCONNECTED) {
+                        Log.i(INFO_TAG, "Device not connected");
+                        break;
+                    }
+                    int cached = previousMsg.get();
+                    Log.i(INFO_TAG, timestamp() + ": BLE sending cached byte " + cached);
+                    quickSend(cached);
+                } catch (InterruptedException ie) {
+                    Log.i(INFO_TAG, "Interrupt during sleep", ie);
+                } catch (Exception e) {
+                    Log.e(ERROR_TAG, "Failed to send cached byte", e);
+                    break;
+                }
+            }
+            close();
+        }
+
+        public void send(int msg) {
+            previousMsg.set(msg);
+            if (characteristic == null) {
+                // Device is not ready. Don't send
+                return;
+            }
+            try {
+                quickSend(msg);
+            } catch (Exception e) {
+                Log.e(ERROR_TAG, "Cannot send byte");
+                close();
+            }
+        }
+
+        private void quickSend(int msg) {
+            characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+            byte[] bytearray = new byte[]{(byte) (msg & 0xFF)};
+            characteristic.setValue(bytearray);
+            gatt.writeCharacteristic(characteristic);
+        }
+
+        public void close() {
+            if (!running.get()) return; // Already closed
+            synchronized (MyBluetooth.this) {
+                mBLEThread = null;
+                bluetoothState = STATE_DISCONNECTED;
+                connectedDevice = null;
+                mBluetoothGattCharacteristic = null;
+                mBluetoothGATT.close();
+            }
+            running.set(false);
+        }
+    }
 }

@@ -5,6 +5,7 @@
 ### Dependencies
 
 * PyBluez
+* bleak (optional)
 * pynput
 
 The **PyBluez** setup script uses the `use_2to3` command which is not supported
@@ -12,6 +13,12 @@ in `setuptools>=58`, so I had to install from source
 ```
 sudo apt install libbluetooth-dev # on Linux
 pip3 install git+https://github.com/pybluez/pybluez.git#egg=pybluez
+```
+
+The **bleak** module provides support for BLE devices (e.g., the HM series).
+This library is not necessary if you are using and HC module.
+```
+pip3 install bleak
 ```
 
 We need a module to handle keypress events. Although the **keyboard** module

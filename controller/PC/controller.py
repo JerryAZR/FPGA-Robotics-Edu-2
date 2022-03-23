@@ -14,7 +14,7 @@ class Controller:
         self.lock = Lock()
         self.device = device
         self.running = False
-        self.cached_msg = 0
+        self.cached_msg = [0,0]
         self.keyStates = {
             Key.up: False, Key.down: False, Key.left: False, Key.right: False,
             KeyCode.from_char('w'): False, KeyCode.from_char('s'): False,
@@ -31,8 +31,7 @@ class Controller:
             print(f"Sending number {NUMBER_KEYS[key]} to device.")
             self.lock.acquire()
             try:
-                self.device.send(NUMBER_KEYS[key])
-                self.cached_msg = NUMBER_KEYS[key]
+                self.cached_msg = [NUMBER_KEYS[key]]
             except Exception as e:
                 print(e)
                 self.running = False
@@ -45,9 +44,7 @@ class Controller:
             # Acquire lock and send commands
             self.lock.acquire()
             try:
-                self.device.send(msg1)
-                self.device.send(msg2)
-                self.cached_msg = msg2
+                self.cached_msg = [msg1,msg2]
             except Exception as e:
                 print(e)
                 self.running = False
@@ -67,9 +64,7 @@ class Controller:
             # Acquire lock and send commands
             self.lock.acquire()
             try:
-                self.device.send(msg1)
-                self.device.send(msg2)
-                self.cached_msg = msg2
+                self.cached_msg = [msg1,msg2]
             except Exception as e:
                 print(e)
                 self.running = False
@@ -97,7 +92,7 @@ class Controller:
     def make_cmds(self, left_spd, right_spd):
         return left_spd, right_spd
 
-    def run(self) -> None:
+    async def run(self) -> None:
         # Set up a listener, then enter a while true loop
         self.running = True
         running = True
@@ -105,11 +100,12 @@ class Controller:
         self.listener.start()
         
         while running:
-            sleep(2)
+            sleep(0.1)
             # Acquire lock and send cached msg
             self.lock.acquire()
             try:
-                self.device.send(self.cached_msg)
+                for msg in self.cached_msg:
+                    await self.device.send(msg)
                 # Check if we should continue to run
                 running = self.running
             except Exception as e:

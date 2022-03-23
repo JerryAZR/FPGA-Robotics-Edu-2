@@ -8,8 +8,9 @@
 * bleak (optional)
 * pynput
 
-The **PyBluez** setup script uses the `use_2to3` command which is not supported
-in `setuptools>=58`, so I had to install from source
+The **PyBluez** setup script on PyPI uses the `use_2to3` command which is
+not supported in `setuptools>=58`, so I had to install from source.
+It should be possible to install directly from PyPI once the issue is fixed.
 ```
 sudo apt install libbluetooth-dev # on Linux
 pip3 install git+https://github.com/pybluez/pybluez.git#egg=pybluez

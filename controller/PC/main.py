@@ -40,9 +40,13 @@ async def ble_scan(timeout=5):
     devices = await BleakScanner.discover(timeout=timeout)
     dev_list = []
     for d in devices:
+        if (d.name is None):
+            # device name is None if bleak can't read its name
+            # (Windows-only behavior)
+            d.name = ""
         if (d.name.replace("-", ":") == d.address):
             # device name is set to the mac address if bleak can't read
-            # its actual name
+            # its actual name (Linux only)
             d.name = ""
         dev_list.append((d.address, d.name))
     return dev_list

@@ -16,6 +16,12 @@ projects.
 The other directories each corresponds to a project and contains a
 top level module, a Makefile, and some other private modules.
 
+## Notes
+
+* 8-bit
+* 1 0/1  0/1 (speed / 32)
+*   l/r  f/b	
+
 ## Tutorial
 
 Also available on [hackster.io](https://www.hackster.io/jerryazr/interfacing-the-ti-rslk-max-with-webfpga-part-2-003630)

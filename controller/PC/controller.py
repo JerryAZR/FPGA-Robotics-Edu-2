@@ -88,9 +88,23 @@ class Controller:
             right_spd -= TURN_SPD
         return self.make_cmds(left_spd, right_spd)
 
-     # Expect this function to be changed later
+    # Expect this function to be changed later
+    # 8-bit per command
+    # bit 7 (MSB): control bit, always 1
+    # bit 6: motor select, 0-left / 1-right
+    # bit 5: direction, 0-forward / 1-backward
+    # bit 4-0: speed, degrees_per_second / 32
     def make_cmds(self, left_spd, right_spd):
-        return left_spd, right_spd
+        ctrl = (1 << 7)
+        left_select = 0
+        right_select = (1 << 6)
+        left_dir = 0 if left_spd >= 0 else (1 << 5)
+        right_dir = 0 if right_spd >= 0 else (1 << 5)
+        left_spd_raw = (abs(left_spd) >> 5) & 0x1F
+        right_spd_raw = (abs(right_spd) >> 5) & 0x1F
+        left_cmd = ctrl | left_select | left_dir | left_spd_raw
+        right_cmd = ctrl | right_select | right_dir | right_spd_raw
+        return left_cmd, right_cmd
 
     async def run(self) -> None:
         # Set up a listener, then enter a while true loop
@@ -104,8 +118,10 @@ class Controller:
             # Acquire lock and send cached msg
             self.lock.acquire()
             try:
+                msg_bv = bytearray()
                 for msg in self.cached_msg:
-                    await self.device.send(msg)
+                    msg_bv.append((msg & 0xFF))
+                await self.device.send(msg_bv)
                 # Check if we should continue to run
                 running = self.running
             except Exception as e:

@@ -28,12 +28,11 @@ class Device:
         else:
             self.socket.connect((self.mac, self.port))
 
-    async def send(self, msg: int) -> None:
-        tmp = (msg & 0xFF).to_bytes(1, "little")
+    async def send(self, msg: bytearray) -> None:
         if self.isBLE:
-            await self.client.write_gatt_char(CHAR_UUID, tmp)
+            await self.client.write_gatt_char(CHAR_UUID, msg)
         else:
-            self.socket.send(tmp)
+            self.socket.send(msg)
 
     async def disconnect(self) -> None:
         if self.isBLE:

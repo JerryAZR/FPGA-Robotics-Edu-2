@@ -237,6 +237,12 @@ public class MyBluetooth {
                 mBLEThread.setGatt(gatt);
                 mBLEThread.setCharacteristic(mBluetoothGattCharacteristic);
             }
+
+            @Override
+            public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+                super.onCharacteristicWrite(gatt, characteristic, status);
+                Log.i(INFO_TAG, "onCharacteristicWrite status: " + status);
+            }
         };
 
         try {
@@ -494,10 +500,14 @@ public class MyBluetooth {
         }
 
         private void quickSend(int msg) {
-            characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+            characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
             byte[] bytearray = new byte[]{(byte) (msg & 0xFF)};
             characteristic.setValue(bytearray);
-            gatt.writeCharacteristic(characteristic);
+            if (gatt.writeCharacteristic(characteristic)) {
+                Log.i(INFO_TAG, "Transmission successful");
+            } else {
+                Log.i(INFO_TAG, "Transmission failed");
+            }
         }
 
         public void close() {

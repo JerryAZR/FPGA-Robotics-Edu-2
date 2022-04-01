@@ -1,5 +1,8 @@
 # FPGA for Robotics Education (Part 2)
 
+[![Android Build](https://github.com/JerryAZR/FPGA-Robotics-Edu-2/actions/workflows/build-android.yml/badge.svg)](https://github.com/JerryAZR/FPGA-Robotics-Edu-2/actions/workflows/build-android.yml)
+[![Synthesis](https://github.com/JerryAZR/FPGA-Robotics-Edu-2/actions/workflows/synthesis.yml/badge.svg)](https://github.com/JerryAZR/FPGA-Robotics-Edu-2/actions/workflows/synthesis.yml)
+
 ## Overview
 
 This repository contains the source code of the **FPGA for Robotics Education**

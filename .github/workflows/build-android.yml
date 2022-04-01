@@ -1,0 +1,11 @@
+name: Android Build
+on: [pull_request, push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+      - name: Build the app
+        working-directory: ./controller/Android/MyController/
+        run: ./gradlew build

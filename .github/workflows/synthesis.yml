@@ -1,0 +1,26 @@
+name: Synthesis
+
+on: [pull_request, push]
+
+jobs:
+  synthesis:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        project:
+          - ./bluetooth
+          - ./encoder_test1
+          - ./feedback
+          - ./maze_solver
+
+    steps:
+      - name: install webFPGA cli tool
+        run: pip install webfpga
+
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: run synthesis
+        working-directory: ${{ matrix.project }}
+        run: make synth

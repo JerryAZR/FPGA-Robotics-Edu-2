@@ -20,7 +20,7 @@ top level module, a Makefile, and some other private modules.
 
 * 8-bit
 * 1 0/1  0/1 (speed / 32)
-*   l/r  f/b	
+* l/r  f/b    
 
 ## Tutorial
 
@@ -48,3 +48,12 @@ in the original project. Lab 6 is not a prerequisite because the IR sensor
 is not used in this lab.
 
 * Lab 7: Maze Solver
+
+In this lab we will implement a maze solver using everything you have learned so
+far. It is recommended that you complete [Lab 6: IR Sensors and Line Following](https://www.hackster.io/fpga-for-robotics-education/lab-6-ir-sensors-and-line-following-c01f78)
+before starting this lab.
+
+* Lab 8: Bluetooth UART Module
+
+In this lab we will connect a Bluetooth UART module to the robot and see how we
+can send data to the robot via Bluetooth.

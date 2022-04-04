@@ -19,6 +19,19 @@ projects.
 The other directories each corresponds to a project and contains a
 top level module, a Makefile, and some other private modules.
 
+## Generic Build Guide
+
+All the projects are systhesised using webfpga, which can be installed using
+```
+pip install webfpga
+```
+
+After the module is installed, run the following command to synthesis and flash bitstream (assuming python is python3).
+```
+python webfpga_local.py synth ./common/*.v ./<project_folder>/*.v
+python webfpga_local.py flash bitstream.bin
+```
+
 ## Notes
 
 * 8-bit

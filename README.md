@@ -32,6 +32,20 @@ python webfpga_local.py synth ./common/*.v ./<project_folder>/*.v
 python webfpga_local.py flash bitstream.bin
 ```
 
+On Windows, the `libusb` backend needs to be manually installed for the `flash` command to work
+```
+pip install libusb
+pip install pyusb
+```
+
+After libusb is installed, you should be able to find `libusb-1.0.dll` at the following locations
+```
+C:\Users\<your-user-name>\AppData\Local\Programs\Python\Python<version>\lib\site-packages\libusb\_platform\_windows\x64
+C:\Users\<your-user-name>\AppData\Local\Programs\Python\Python<version>\lib\site-packages\libusb\_platform\_windows\x86
+```
+
+Add both of them to PATH and restart PowerShell. The `flash` command should work now.
+
 ## Notes
 
 * 8-bit

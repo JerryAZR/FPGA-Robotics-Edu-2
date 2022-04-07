@@ -40,17 +40,29 @@ pip install pyusb
 
 After libusb is installed, you should be able to find `libusb-1.0.dll` at the following locations
 ```
-C:\Users\<your-user-name>\AppData\Local\Programs\Python\Python<version>\lib\site-packages\libusb\_platform\_windows\x64
-C:\Users\<your-user-name>\AppData\Local\Programs\Python\Python<version>\lib\site-packages\libusb\_platform\_windows\x86
+<Python-install-path>\lib\site-packages\libusb\_platform\_windows\x64
+<Python-install-path>\lib\site-packages\libusb\_platform\_windows\x86
 ```
 
-Add both of them to PATH and restart PowerShell. The `flash` command should work now.
+Add the one that matches your python and system architecture to PATH and restart PowerShell. The `flash` command should work now.
+
+For example, I have Python 3.9 (64-bit) installed and my libusb module was installed without using
+a virtual environment, so the `libusb-1.0.dll` I want to use is located at:
+```
+C:\Users\<my-user-name>\AppData\Local\Programs\Python\Python39\lib\site-packages\libusb\_platform\_windows\x64
+```
+
+We are aware that the WebFPGA CLI utility is not exactly easy to set up on Windows, so we have built
+an unofficial GUI wrapper of the command line utility.
+See [the WebFPGA-GUI repo](https://github.com/JerryAZR/WebFPGA-GUI) for details.
 
 ## Notes
 
-* 8-bit
-* 1 0/1  0/1 (speed / 32)
-* l/r  f/b    
+Bluetooth RC command format
+
+| Bit | 7 | 6 | 5 | 4:0 |
+|-----|---|---|---|-----|
+| **Notes** | test=0; command=1 | left=0; right=1 | forward=0; backward=1 | speed / 32 |
 
 ## Tutorial
 
@@ -70,20 +82,20 @@ will demonstrate some more advanced use cases of the WebFPGA as a control unit.
 
 ### Labs
 
-* Lab 5.5: Feedback Control
+* Lab 5.5: Feedback Control ([hackster.io link](https://www.hackster.io/452951/lab-5-5-feedback-control-747153))
 
 This lab can be attempted once you have completed [Lab 4: Motors and Movement](https://www.hackster.io/fpga-for-robotics-education/lab-4-motors-and-movement-5b9a55)
 and [Lab 5: Encoders and Precision Movement](https://www.hackster.io/fpga-for-robotics-education/lab-5-encoders-and-precision-movement-b87cd3)
 in the original project. Lab 6 is not a prerequisite because the IR sensor
 is not used in this lab.
 
-* Lab 7: Maze Solver
+* Lab 7: Maze Solver ([hackster.io link](https://www.hackster.io/454408/lab-7-maze-solver-ba0cd3))
 
 In this lab we will implement a maze solver using everything you have learned so
 far. It is recommended that you complete [Lab 6: IR Sensors and Line Following](https://www.hackster.io/fpga-for-robotics-education/lab-6-ir-sensors-and-line-following-c01f78)
 before starting this lab.
 
-* Lab 8: Bluetooth UART Module
+* Lab 8: Bluetooth UART Module ([hackster.io link](https://www.hackster.io/457040/lab-8-bluetooth-uart-module-ee2259))
 
 In this lab we will connect a Bluetooth UART module to the robot and see how we
 can send data to the robot via Bluetooth.

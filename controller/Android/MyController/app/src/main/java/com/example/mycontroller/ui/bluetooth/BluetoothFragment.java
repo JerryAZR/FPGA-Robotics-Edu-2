@@ -94,9 +94,6 @@ public class BluetoothFragment extends Fragment {
                 if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
                     int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
                             BluetoothAdapter.ERROR);
-                    if (state == BluetoothAdapter.STATE_OFF) {
-                        myBluetooth.stopBLEScan();
-                    }
                     if (state == BluetoothAdapter.STATE_ON ||
                         state == BluetoothAdapter.STATE_OFF) {
                         generateDeviceList();

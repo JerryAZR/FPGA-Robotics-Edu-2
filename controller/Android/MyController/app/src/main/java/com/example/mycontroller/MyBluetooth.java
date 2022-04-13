@@ -304,6 +304,18 @@ public class MyBluetooth {
         }
     }
 
+    public void send(byte[] msg) {
+        if (bluetoothState == STATE_CONNECTED) {
+            if (isBLE) {
+                // send msg to BLE device
+                mBLEThread.send(msg);
+            } else {
+                // send msg to classic device
+                mConnectThread.send(msg);
+            }
+        }
+    }
+
     private static String timestamp() {
         Long time = System.currentTimeMillis();
         return time.toString();
@@ -419,6 +431,24 @@ public class MyBluetooth {
             }
         }
 
+        public void send(byte[] msg) {
+            previousMsg.set(msg[0]);
+
+            if (mSocket.isConnected()) {
+                try {
+                    outStream.write(msg);
+                    Log.i(INFO_TAG,
+                            "Sending bytes to " + mDevice.getName());
+                } catch (IOException ioException) {
+                    Log.e(ERROR_TAG, "Failed to send bytes", ioException);
+                    close();
+                }
+            } else {
+                Log.i(INFO_TAG, "Socket already closed.");
+                close();
+            }
+        }
+
         public void close() {
             if (!running.get()) return; // Already closed
             try {
@@ -499,13 +529,33 @@ public class MyBluetooth {
             }
         }
 
+        public void send(byte[] msg) {
+            previousMsg.set(msg[0]);
+            if (characteristic == null) {
+                // Device is not ready. Don't send
+                return;
+            }
+            try {
+                quickSend(msg);
+            } catch (Exception e) {
+                Log.e(ERROR_TAG, "Cannot send bytes");
+                close();
+            }
+        }
+
         private void quickSend(int msg) {
             characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
             byte[] bytearray = new byte[]{(byte) (msg & 0xFF)};
             characteristic.setValue(bytearray);
-            if (gatt.writeCharacteristic(characteristic)) {
-                Log.i(INFO_TAG, "Transmission successful");
-            } else {
+            if (!gatt.writeCharacteristic(characteristic)) {
+                Log.i(INFO_TAG, "Transmission failed");
+            }
+        }
+
+        private void quickSend(byte[] msg) {
+            characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
+            characteristic.setValue(msg);
+            if (!gatt.writeCharacteristic(characteristic)) {
                 Log.i(INFO_TAG, "Transmission failed");
             }
         }

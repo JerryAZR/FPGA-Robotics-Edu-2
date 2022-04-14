@@ -13,6 +13,7 @@ jobs:
           - ./encoder_test1
           - ./feedback
           - ./maze_solver
+          - ./remote_control
 
     steps:
       - name: install webFPGA cli tool

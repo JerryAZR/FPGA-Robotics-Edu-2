@@ -3,6 +3,13 @@
 [![Android Build](https://github.com/JerryAZR/FPGA-Robotics-Edu-2/actions/workflows/build-android.yml/badge.svg)](https://github.com/JerryAZR/FPGA-Robotics-Edu-2/actions/workflows/build-android.yml)
 [![Synthesis](https://github.com/JerryAZR/FPGA-Robotics-Edu-2/actions/workflows/synthesis.yml/badge.svg)](https://github.com/JerryAZR/FPGA-Robotics-Edu-2/actions/workflows/synthesis.yml)
 
+## TODO
+
+* Documentation on hackster.io
+* Reduce speedctl response time
+* Auto-stop on disconnect
+* Disable forward movement on bump
+
 ## Overview
 
 This repository contains the source code of the **FPGA for Robotics Education**

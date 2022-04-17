@@ -65,8 +65,12 @@ module fpga_top (
         end
     end    
     
-    speedctl leftCtl(WF_CLK,WF_BUTTON,motorL_encdr,left_spd,PWM_L);
-    speedctl rightCtl(WF_CLK,WF_BUTTON,motorR_encdr,right_spd,PWM_R);
+    speedctl2 #(.LOG_DIV(3), .LOG_PROP(4), .LOG_DERIV(3)) leftCtl(
+        WF_CLK,WF_BUTTON,motorL_encdr,left_spd,PWM_L
+    );
+    speedctl2 #(.LOG_DIV(3), .LOG_PROP(4), .LOG_DERIV(3)) rightCtl(
+        WF_CLK,WF_BUTTON,motorR_encdr,right_spd,PWM_R
+    );
     
     assign left_spd = {6'd0, left[4:0], 5'd0};
     assign right_spd = {6'd0, right[4:0], 5'd0};

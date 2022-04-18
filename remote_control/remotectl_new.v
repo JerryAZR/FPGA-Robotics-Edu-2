@@ -66,8 +66,8 @@ module fpga_top (
               end 
               else begin
                 if (Rx_data[6] == 0) begin
-                left_next = {2'b1,Rx_data[5:0]};
-                right_next = right;
+                  left_next = {2'b1,Rx_data[5:0]};
+                  right_next = right;
                 end 
                 else begin
                   right_next = {2'b1,Rx_data[5:0]};

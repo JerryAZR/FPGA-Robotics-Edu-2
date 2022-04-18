@@ -31,12 +31,12 @@ module fpga_top (
     wire [7:0] Rx_data; // Connected to the bluetooth Rx module
     reg [7:0] left, left_next;
     reg [7:0] right, right_next;
-    reg bump0, bump1, bump2, bump3, bump4, bump5;
-    reg [5:0] bumper;
+    reg bumper;
     wire [15:0] left_spd, right_spd;
     wire PWM_L, PWM_R;
 
     localparam REST = 8'b0;
+    integer i;
 
     Rx_wrapper receiver(WF_CLK, ~WF_BUTTON, Rx, Rx_data);
 
@@ -55,14 +55,22 @@ module fpga_top (
     always @(*) begin
         left_next = 8'b0;
         right_next = 8'b0;
-        bump0, bump1, bump2, bump3, bump4, bump5 = 0;
-        bumper = {bump0,nump1,bump2,bump3,bump4,bump5};
-        for (int i=0;i<5;i++) begin
-          if (bumper[i] = 1) begin
-            if (Rx_data[7]) begin
+        bumper = bump0&bump1&bump2&bump3&bump4&bump5;
+        if (Rx_data[7] == 1) begin
+            if (bumper == 1) begin
+              if (Rx_data[6] == 0) begin
+                left_next = {2'b1,Rx_data[5:0]};
+                right_next = right;
+              end 
+              else begin
+                right_next = {2'b1,Rx_data[5:0]};
+                left_next = left;
+              end
+            end
+            else begin
               if (Rx_data[5] == 0) begin
-                left_next = 0;
-                right_next = 0;
+                left_next = 8'b0;
+                right_next = 8'b0;
               end 
               else begin
                 if (Rx_data[6] == 0) begin
@@ -73,21 +81,8 @@ module fpga_top (
                   right_next = {2'b1,Rx_data[5:0]};
                   left_next = left;
                 end
-              end
+              end              
             end
-          end
-          else begin
-            if (Rx_data[7]) begin
-              if (Rx_data[6] == 0) begin
-                left_next = {2'b1,Rx_data[5:0]};
-                right_next = right;
-              end 
-              else begin
-                right_next = {2'b1,Rx_data[5:0]};
-                left_next = left;
-              end
-            end
-          end
         end
     end    
     

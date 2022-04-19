@@ -24,7 +24,7 @@ module fpga_top (
 
     wire Rx, Tx; // Bluetooth Rx and Tx signals
     assign Rx = ir_snsrch0;
-    assign ir_snsrch1 = Tx; // Map Bluetooth signals to ir sensor pins
+    assign ir_snsrch1 = Tx; // Map Bluetooth signals to Ir sensor pins
 
     assign Tx = 1'b1; // We are not using Tx in this example
 

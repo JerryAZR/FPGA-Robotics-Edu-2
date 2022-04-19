@@ -23,14 +23,13 @@ module Rx_wrapper (
             Rx_data <= 0;
             counter <= 0;
         end else begin
-            counter <= counter +1;
             if (counter == SLEEP) begin
                 Rx_data <= 0;
                 counter <= 0; 
             end
             else begin 
                 Rx_data <= Rx_done ? Rx_data_raw : Rx_data;
-                counter <= 0;
+                counter <= Rx_done ? 0 : counter + 1;
             end
         end
     end

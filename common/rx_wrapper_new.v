@@ -7,7 +7,7 @@ module Rx_wrapper (
     parameter DATA_WIDTH = 8;
     parameter BAUD_RATE = 32'd1667; // 9600 baud rate (1667 cycles per bit)
 
-    localparam SLEEP = 32'd48000000; // Sleep if no movement after 3sec
+    localparam SLEEP = 32'd48000000; // Sleep if no movement after 3secs
 
     input wire clk, rst, Rx;
     output reg [DATA_WIDTH-1:0] Rx_data;

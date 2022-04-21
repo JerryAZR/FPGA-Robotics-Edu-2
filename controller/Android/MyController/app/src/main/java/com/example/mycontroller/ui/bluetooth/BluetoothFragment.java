@@ -1,3 +1,23 @@
+/**
+ * This file is part of the TI-RSLK Bluetooth RC Car Controller Android
+ * App, available at https://github.com/JerryAZR/FPGA-Robotics-Edu-2
+ *
+ * Copyright (C) 2022 Zerui An <anzerui@126.com / jerryazr@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package com.example.mycontroller.ui.bluetooth;
 
 import android.Manifest;
@@ -186,7 +206,7 @@ public class BluetoothFragment extends Fragment {
                 textView.setText("Permission not granted.");
                 return false;
             case MyBluetooth.BLUETOOTH_NO_SCAN:
-                Log.i("MY_INFO", "Scan permission not granted");
+                ;// Log.i("MY_INFO", "Scan permission not granted");
                 break;
             case MyBluetooth.BLUETOOTH_DISABLED:
                 textView.setText("Bluetooth not enabled.");
@@ -251,7 +271,7 @@ public class BluetoothFragment extends Fragment {
                 textView.setText("Permission not granted.");
                 return false;
             case MyBluetooth.BLUETOOTH_NO_SCAN:
-                Log.i("MY_INFO", "Scan permission not granted");
+                ;// Log.i("MY_INFO", "Scan permission not granted");
                 break;
             case MyBluetooth.BLUETOOTH_DISABLED:
                 textView.setText("Bluetooth not enabled.");
@@ -283,8 +303,7 @@ public class BluetoothFragment extends Fragment {
                 BluetoothDevice leDevice = result.getDevice();
                 if (leDevice.getName() != null && !leDeviceSet.contains(leDevice)) {
                     leDeviceSet.add(leDevice);
-                    Log.i(MyBluetooth.INFO_TAG,
-                            leDevice.getName() + "  " + leDevice.getAddress());
+                    ;// Log.i(MyBluetooth.INFO_TAG, leDevice.getName() + "  " + leDevice.getAddress());
                     leDeviceList = makeDeviceList(leDeviceSet);
                     leDeviceListAdapter = makeAdapter(leDeviceList);
                     deviceListView.setAdapter(leDeviceListAdapter);

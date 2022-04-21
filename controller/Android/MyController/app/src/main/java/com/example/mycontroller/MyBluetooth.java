@@ -1,3 +1,23 @@
+/**
+ * This file is part of the TI-RSLK Bluetooth RC Car Controller Android
+ * App, available at https://github.com/JerryAZR/FPGA-Robotics-Edu-2
+ *
+ * Copyright (C) 2022 Zerui An <anzerui@126.com / jerryazr@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package com.example.mycontroller;
 
 import android.Manifest;
@@ -140,7 +160,7 @@ public class MyBluetooth {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                Log.i(INFO_TAG, "Scan period exceeded, stopping...");
+                ;// Log.i(INFO_TAG, "Scan period exceeded, stopping...");
                 leScanner.stopScan(callback);
             }
         }, BLE_SCAN_PERIOD);
@@ -205,13 +225,13 @@ public class MyBluetooth {
                     bluetoothState = newState;
                 }
                 if (newState == STATE_CONNECTED) {
-                    Log.i(INFO_TAG, "Connected");
+                    ;// Log.i(INFO_TAG, "Connected");
                     toast(ctx, "Connected to " + device.getName(),
                             Toast.LENGTH_SHORT);
                     connectedDevice = gatt.getDevice();
                     gatt.discoverServices();
                 } else if (newState == STATE_DISCONNECTED) {
-                    Log.i(INFO_TAG, "Disconnected");
+                    ;// Log.i(INFO_TAG, "Disconnected");
                     toast(ctx, gatt.getDevice().getName() + " disconnected",
                             Toast.LENGTH_SHORT);
                     gatt.close();
@@ -223,15 +243,15 @@ public class MyBluetooth {
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                 super.onServicesDiscovered(gatt, status);
                 List<BluetoothGattService> services = gatt.getServices();
-                Log.i(INFO_TAG, "onServicesDiscovered callback");
+                ;// Log.i(INFO_TAG, "onServicesDiscovered callback");
                 for (BluetoothGattService service : services) {
-                    Log.i(INFO_TAG, "Service: " + service.getUuid().toString());
+                    ;// Log.i(INFO_TAG, "Service: " + service.getUuid().toString());
                 }
                 BluetoothGattService service = gatt.getService(BLE_SERV_UUID);
                 List<BluetoothGattCharacteristic> charList =
                         service.getCharacteristics();
                 for (BluetoothGattCharacteristic characteristic : charList) {
-                    Log.i(INFO_TAG, "Char: " + characteristic.getUuid().toString());
+                    ;// Log.i(INFO_TAG, "Char: " + characteristic.getUuid().toString());
                 }
                 mBluetoothGattCharacteristic = service.getCharacteristic(BLE_CHAR_UUID);
                 mBLEThread.setGatt(gatt);
@@ -241,15 +261,14 @@ public class MyBluetooth {
             @Override
             public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
                 super.onCharacteristicWrite(gatt, characteristic, status);
-                Log.i(INFO_TAG, "onCharacteristicWrite status: " + status);
+                ;// Log.i(INFO_TAG, "onCharacteristicWrite status: " + status);
             }
         };
 
         try {
             mBluetoothGATT = device.connectGatt(ctx, false, bluetoothGattCallback);
         } catch (Exception e) {
-            Log.e(ERROR_TAG,
-                    "Failed to connect to BLE device " + device.getName(), e);
+            ;// Log.e(ERROR_TAG, "Failed to connect to BLE device " + device.getName(), e);
             return;
         }
         if (mBLEThread != null) {
@@ -273,11 +292,11 @@ public class MyBluetooth {
                 target_mac = device.getAddress();
             }
             if (connected_mac.equals(target_mac)) {
-                Log.i(INFO_TAG, "Already connected");
+                ;// Log.i(INFO_TAG, "Already connected");
                 return false;
             } else {
                 // disconnect
-                Log.i(INFO_TAG, "Connected to another device. Disconnecting...");
+                ;// Log.i(INFO_TAG, "Connected to another device. Disconnecting...");
                 if (mConnectThread != null) {
                     mConnectThread.close();
                 }
@@ -287,7 +306,7 @@ public class MyBluetooth {
                 }
             }
         } else {
-            Log.i(INFO_TAG, "Nothing to disconnect");
+            ;// Log.i(INFO_TAG, "Nothing to disconnect");
         }
         return true; // can proceed with connection
     }
@@ -347,7 +366,7 @@ public class MyBluetooth {
             try {
                 mSocket = device.createRfcommSocketToServiceRecord(MY_UUID);
             } catch (IOException e) {
-                Log.e(ERROR_TAG, "Failed to get socket for device " + device.getName(), e);
+                ;// Log.e(ERROR_TAG, "Failed to get socket for device " + device.getName(), e);
             }
         }
 
@@ -372,7 +391,7 @@ public class MyBluetooth {
                 // That being said, we don't HAVE to call cancelDiscovery.
                 // This is just for better performance.
                 // So it's fine if we don't have the permission to do so.
-                Log.i(INFO_TAG, "Can't cancel discovery: permission denied.");
+                ;// Log.i(INFO_TAG, "Can't cancel discovery: permission denied.");
             }
 
             // Attempt to connect
@@ -394,7 +413,7 @@ public class MyBluetooth {
                 inStream = mSocket.getInputStream();
                 outStream = mSocket.getOutputStream();
             } catch (Exception e) {
-                Log.e(ERROR_TAG, "Failed to get IO stream", e);
+                ;// Log.e(ERROR_TAG, "Failed to get IO stream", e);
                 close();
             }
 
@@ -403,11 +422,11 @@ public class MyBluetooth {
                     Thread.sleep(2000);
                     int cached = previousMsg.get();
                     outStream.write(cached);
-                    Log.i(INFO_TAG, timestamp() + ": Sending cached byte " + cached);
+                    ;// Log.i(INFO_TAG, timestamp() + ": Sending cached byte " + cached);
                 } catch (InterruptedException interruptedException) {
-                    Log.i(INFO_TAG, "Interrupt during sleep", interruptedException);
+                    ;// Log.i(INFO_TAG, "Interrupt during sleep", interruptedException);
                 } catch (IOException ioException) {
-                    Log.e(ERROR_TAG, "Failed to send cached byte", ioException);
+                    ;// Log.e(ERROR_TAG, "Failed to send cached byte", ioException);
                     close();
                 }
             }
@@ -419,14 +438,13 @@ public class MyBluetooth {
             if (mSocket.isConnected()) {
                 try {
                     outStream.write(msg);
-                    Log.i(INFO_TAG,
-                            "Sending byte " + (msg & 0xFF) + " to " + mDevice.getName());
+                    ;// Log.i(INFO_TAG, "Sending byte " + (msg & 0xFF) + " to " + mDevice.getName());
                 } catch (IOException ioException) {
-                    Log.e(ERROR_TAG, "Failed to send byte", ioException);
+                    ;// Log.e(ERROR_TAG, "Failed to send byte", ioException);
                     close();
                 }
             } else {
-                Log.i(INFO_TAG, "Socket already closed.");
+                ;// Log.i(INFO_TAG, "Socket already closed.");
                 close();
             }
         }
@@ -437,14 +455,13 @@ public class MyBluetooth {
             if (mSocket.isConnected()) {
                 try {
                     outStream.write(msg);
-                    Log.i(INFO_TAG,
-                            "Sending bytes to " + mDevice.getName());
+                    ;// Log.i(INFO_TAG, "Sending bytes to " + mDevice.getName());
                 } catch (IOException ioException) {
-                    Log.e(ERROR_TAG, "Failed to send bytes", ioException);
+                    ;// Log.e(ERROR_TAG, "Failed to send bytes", ioException);
                     close();
                 }
             } else {
-                Log.i(INFO_TAG, "Socket already closed.");
+                ;// Log.i(INFO_TAG, "Socket already closed.");
                 close();
             }
         }
@@ -453,9 +470,9 @@ public class MyBluetooth {
             if (!running.get()) return; // Already closed
             try {
                 mSocket.close();
-                Log.i(INFO_TAG, "Closing socket");
+                ;// Log.i(INFO_TAG, "Closing socket");
             } catch (Exception close_fail) {
-                Log.e(ERROR_TAG, "Failed to close socket", close_fail);
+                ;// Log.e(ERROR_TAG, "Failed to close socket", close_fail);
             }
             synchronized (MyBluetooth.this) {
                 mConnectThread = null;
@@ -499,16 +516,16 @@ public class MyBluetooth {
                     if (!charReady.get()) continue;
                     if (mBluetoothManager.getConnectionState(gatt.getDevice(),
                             BluetoothProfile.GATT_SERVER) == STATE_DISCONNECTED) {
-                        Log.i(INFO_TAG, "Device not connected");
+                        ;// Log.i(INFO_TAG, "Device not connected");
                         break;
                     }
                     int cached = previousMsg.get();
-                    Log.i(INFO_TAG, timestamp() + ": BLE sending cached byte " + cached);
+                    ;// Log.i(INFO_TAG, timestamp() + ": BLE sending cached byte " + cached);
                     quickSend(cached);
                 } catch (InterruptedException ie) {
-                    Log.i(INFO_TAG, "Interrupt during sleep", ie);
+                    ;// Log.i(INFO_TAG, "Interrupt during sleep", ie);
                 } catch (Exception e) {
-                    Log.e(ERROR_TAG, "Failed to send cached byte", e);
+                    ;// Log.e(ERROR_TAG, "Failed to send cached byte", e);
                     break;
                 }
             }
@@ -524,7 +541,7 @@ public class MyBluetooth {
             try {
                 quickSend(msg);
             } catch (Exception e) {
-                Log.e(ERROR_TAG, "Cannot send byte");
+                ;// Log.e(ERROR_TAG, "Cannot send byte");
                 close();
             }
         }
@@ -538,7 +555,7 @@ public class MyBluetooth {
             try {
                 quickSend(msg);
             } catch (Exception e) {
-                Log.e(ERROR_TAG, "Cannot send bytes");
+                ;// Log.e(ERROR_TAG, "Cannot send bytes");
                 close();
             }
         }
@@ -548,7 +565,7 @@ public class MyBluetooth {
             byte[] bytearray = new byte[]{(byte) (msg & 0xFF)};
             characteristic.setValue(bytearray);
             if (!gatt.writeCharacteristic(characteristic)) {
-                Log.i(INFO_TAG, "Transmission failed");
+                ;// Log.i(INFO_TAG, "Transmission failed");
             }
         }
 
@@ -556,7 +573,7 @@ public class MyBluetooth {
             characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
             characteristic.setValue(msg);
             if (!gatt.writeCharacteristic(characteristic)) {
-                Log.i(INFO_TAG, "Transmission failed");
+                ;// Log.i(INFO_TAG, "Transmission failed");
             }
         }
 

@@ -99,3 +99,9 @@ before starting this lab.
 
 In this lab we will connect a Bluetooth UART module to the robot and see how we
 can send data to the robot via Bluetooth.
+
+* Lab 9: Bluetooth Remote Control Car ([hackster.io link](https://www.hackster.io/nealzhao97/lab-9-bluetooth-remote-control-car-f5d09a))
+
+In this lab we will use the Bluetooth UART module and the UART interface implemented
+in lab 8 to build a remote-control system with it. An Android or PC app would act as
+the controller.

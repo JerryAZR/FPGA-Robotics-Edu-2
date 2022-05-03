@@ -16,12 +16,18 @@ jobs:
           - ./remote_control
 
     steps:
-      - name: install webFPGA cli tool
-        run: pip install webfpga
-
       - name: Checkout the code
         uses: actions/checkout@v2
 
+      - name: Download yosys
+        run: wget https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2022-05-02/oss-cad-suite-linux-x64-20220502.tgz
+
+      - name: Extract archive
+        run: tar -zxf oss-cad-suite-linux-x64-20220502.tgz
+
+      - name: Setup environment
+        run: source ./oss-cad-suite/environment
+
       - name: run synthesis
         working-directory: ${{ matrix.project }}
-        run: make synth
+        run: make local

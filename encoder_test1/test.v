@@ -1,5 +1,3 @@
-`include "pinmap.v"
-
 module fpga_top (
     input wire WF_CLK, WF_BUTTON,
     input wire motorL_encdr, motorR_encdr,

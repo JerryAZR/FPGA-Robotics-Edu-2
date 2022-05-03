@@ -25,9 +25,6 @@ jobs:
       - name: Extract archive
         run: tar -zxf oss-cad-suite-linux-x64-20220502.tgz
 
-      - name: Setup environment
-        run: source ./oss-cad-suite/environment
-
       - name: run synthesis
         working-directory: ${{ matrix.project }}
-        run: make local
+        run: source ./oss-cad-suite/environment && make local

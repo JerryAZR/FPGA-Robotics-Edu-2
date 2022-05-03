@@ -1,3 +1,16 @@
+// Cheng Zhao
+// FPGA for Robotics Education
+//------------------------------------------------------------------------------
+// A wrapper for the Rx_core module
+//
+// inputs:
+//      clk     -- a 16MHz clock
+//      rst     -- active high reset
+//      Rx      -- Rx data line. Connected to Tx of the bluetooth module
+// output:
+//      Rx_data -- The last valid data, or 0 if no new data in 3 seconds
+//
+
 module Rx_wrapper (
     clk, rst,
     Rx,

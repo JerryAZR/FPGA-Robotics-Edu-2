@@ -27,4 +27,4 @@ jobs:
 
       - name: run synthesis
         working-directory: ${{ matrix.project }}
-        run: source ./oss-cad-suite/environment && make local
+        run: source ../oss-cad-suite/environment && make local

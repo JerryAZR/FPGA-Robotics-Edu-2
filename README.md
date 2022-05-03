@@ -3,13 +3,6 @@
 [![Android Build](https://github.com/JerryAZR/FPGA-Robotics-Edu-2/actions/workflows/build-android.yml/badge.svg)](https://github.com/JerryAZR/FPGA-Robotics-Edu-2/actions/workflows/build-android.yml)
 [![Synthesis](https://github.com/JerryAZR/FPGA-Robotics-Edu-2/actions/workflows/synthesis.yml/badge.svg)](https://github.com/JerryAZR/FPGA-Robotics-Edu-2/actions/workflows/synthesis.yml)
 
-## TODO
-
-* Documentation on hackster.io
-* Reduce speedctl response time
-* Auto-stop on disconnect
-* Disable forward movement on bump
-
 ## Overview
 
 This repository contains the source code of the **FPGA for Robotics Education**
@@ -106,3 +99,9 @@ before starting this lab.
 
 In this lab we will connect a Bluetooth UART module to the robot and see how we
 can send data to the robot via Bluetooth.
+
+* Lab 9: Bluetooth Remote Control Car ([hackster.io link](https://www.hackster.io/nealzhao97/lab-9-bluetooth-remote-control-car-f5d09a))
+
+In this lab we will use the Bluetooth UART module and the UART interface implemented
+in lab 8 to build a remote-control system with it. An Android or PC app would act as
+the controller.
